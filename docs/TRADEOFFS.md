@@ -87,3 +87,38 @@ What this means, honestly:
 - Video sees little floor (~8% of points), so the walked camera path is used as known floor.
 - Next steps with more time: a global pose graph over all chunks instead of chained gluing; a larger GPU (one
   VGGT pass over the whole walk); classic SfM (COLMAP) as a second opinion.
+
+## Photo tier
+**How it works:** each room folder (2-8 photos) goes through VGGT jointly (poses + relative depth), Depth
+Anything V2 for metres (same calibrated bias as the video tier), EXIF focal length when present, then the
+LiDAR back end measures ONE room (the floor region the cameras stand in). Rooms are linked when photos of one
+show the inside of another (SIFT + ratio test + seeded RANSAC) and stitched at shared doors (detected door, or
+the wall the linking photo looks at); a placement that would overlap is moved the smallest distance that
+clears it. Same models and licences as the video tier.
+
+**Benchmark is simulated (disclosed):** no photo set with ground truth exists for the sample flat, so
+`scripts/make_photo_folders.py` picks protocol-like "photos" from each LiDAR room's video frames (inside the
+room, one per viewing direction, sharp, looking across; plus one per detected door), with the true focal in
+EXIF. The reference is the LiDAR plan of the same capture, not tape. The LiDAR rooms used as reference are
+themselves fragments of the real rooms (Plan 2 limitations), which inflates some errors.
+
+| Capture | Rooms photo / LiDAR | Footprint photo / LiDAR | Footprint IoU after alignment | Adjacency precision / recall vs LiDAR | Max overlap | Median wall error | LiDAR value inside photo range (areas / walls) |
+|---|---|---|---|---|---|---|---|
+| floor_only | 9 / 10 | 42.7 / 35.3 m2 (+21 %) | 0.21 | 0.50 / 0.43 | 0.096 m2 | 28 % | 9/9, 35/36 |
+| with_ceiling | 7 / 8 | 44.4 / 36.5 m2 (+22 %) | 0.32 | 0.33 / 1.00 | 0.096 m2 | 29 % | 7/7, 28/28 |
+
+Per-room area error vs LiDAR ranges from -69 % to +320 %; 6 of 16 rooms are within +-25 %.
+
+What this means, honestly:
+- **The photo tier stitches a whole-property plan from per-room folders, with no overlaps, but its
+  dimensions do not meet the +-8 % gate.** Median wall error 28 %.
+- **Ranges are honest but very wide:** relative sigma 0.6 (from the 90th-percentile wall error, 117 %).
+  Calibrated in-sample; leave-one-capture-out wall coverage 86 % and 93 %. Lower bounds clipped at 0.
+- **Causes:** 3-8 photos leave wall sections unseen, so a room "leaks" into floor seen through doors (areas
+  too big) or loses unseen corners (too small); VGGT's focal guess is 8-22 % low (EXIF fixes this on phones);
+  few real doors are detected from photos, so most links use the wall a photo looks at, and many placements
+  have to be moved 1-4 m to avoid overlaps, so the layout only loosely matches LiDAR (IoU 0.2-0.3).
+- Rooms with < 2 photos are skipped and named in the warnings; rooms nobody can see from another room are drawn
+  beside the plan with a warning (2 on floor_only).
+- In real use the S23/iPhone protocol (corner shots across the room) should cover walls better than these
+  walkthrough frames; to be re-measured on our own tape-measured rooms.
