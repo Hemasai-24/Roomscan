@@ -165,7 +165,9 @@ def stitch(infos, links):
             warnings.append(f"{room['id']}: pushed {pushed:.2f} m away from {rooms[a]['id']} to avoid overlap")
         rooms[b] = room
         placed.append(b)
-        used.update({da["id"], db["id"]})
+        # a detected door joins exactly two rooms; a virtual door is only "the wall this photo looks at",
+        # which may lead to several rooms (overlaps are still prevented by pushing)
+        used.update(d["id"] for d in (da, db) if not d["virtual"])
         conf = min(1.0, l["matches"] / 100) * (0.5 if (da["virtual"] or db["virtual"]) else 1.0) \
             * (0.5 if pushed > 0 else 1.0)
         adjacency.append({"room_a": rooms[a]["id"], "room_b": room["id"], "via": da["id"], "via_b": db["id"],

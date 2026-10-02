@@ -84,6 +84,18 @@ def test_room_without_doors_linked_by_photo_gets_virtual_door():
     np.testing.assert_allclose(vd["mid"], [0.0, 1.5])
 
 
+def test_room_without_doors_can_link_to_several_rooms():
+    hub = make_room("H", [(0, 0), (4, 0), (4, 4), (0, 4)])                 # no detected doors
+    b = make_room("B", [(0, 0), (3, 0), (3, 3), (0, 3)], doors=[(0, 1.2, 0.9)])
+    c = make_room("C", [(0, 0), (3, 0), (3, 3), (0, 3)], doors=[(0, 1.2, 0.9)])
+    infos = [info(hub, [(2, 2), (2, 2)], [(1, 0), (0, 1)]), info(b, [(1.5, 1.5)], [(-1, 0)]),
+             info(c, [(1.5, 1.5)], [(-1, 0)])]
+    rooms, adj, warns = stitch(infos, {(0, 1): {"matches": 90, "photo_i": 0, "photo_j": 0},
+                                       (0, 2): {"matches": 80, "photo_i": 0, "photo_j": 0}})
+    assert len(adj) == 2
+    assert _overlaps(rooms) <= 0.1
+
+
 def test_unlinked_room_placed_beside_with_warning():
     b = make_room("B", [(0, 0), (3, 0), (3, 3), (0, 3)], doors=[(0, 1.2, 0.9)])
     lone = make_room("L", [(0, 0), (2, 0), (2, 2), (0, 2)])
