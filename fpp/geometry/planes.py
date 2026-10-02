@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 
 import numpy as np
-import open3d as o3d
 
 UP = np.array([0.0, 1.0, 0.0])
 MIN_CEILING_ABOVE_FLOOR = 1.9
@@ -32,20 +31,39 @@ def _refit(pts):
     return n, d, rms
 
 
-def extract_planes(points, dist=0.02, min_inliers=1500, max_planes=30):
-    o3d.utility.random.seed(0)
-    rest = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(points))
+def _ransac(pts, dist, iters, rng, score_n=20000, batch=250):
+    """Seeded single-threaded RANSAC: hypotheses scored on a fixed subsample. Returns inlier mask."""
+    sub = pts[rng.choice(len(pts), min(score_n, len(pts)), replace=False)]
+    best_n, best_cnt = None, -1
+    for _ in range(0, iters, batch):
+        tri = pts[rng.integers(0, len(pts), (batch, 3))]
+        n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+        norm = np.linalg.norm(n, axis=1)
+        ok = norm > 1e-9
+        n = n[ok] / norm[ok, None]
+        d = -np.einsum("ij,ij->i", n, tri[ok, 0])
+        cnt = (np.abs(sub @ n.T + d) < dist).sum(0)
+        j = int(np.argmax(cnt))
+        if cnt[j] > best_cnt:
+            best_cnt, best_n = cnt[j], (n[j], d[j])
+    n, d = best_n
+    return np.abs(pts @ n + d) < dist
+
+
+def extract_planes(points, dist=0.02, min_inliers=1500, max_planes=30, iters=2000):
+    rng = np.random.default_rng(0)
+    rest = np.asarray(points, float)
     planes = []
     for _ in range(max_planes):
-        if len(rest.points) < min_inliers:
+        if len(rest) < min_inliers:
             break
-        _, idx = rest.segment_plane(dist, 3, 2000)
-        if len(idx) < min_inliers:
+        m = _ransac(rest, dist, iters, rng)
+        if m.sum() < min_inliers:
             break
-        pts = np.asarray(rest.points)[idx]
+        pts = rest[m]
         n, d, rms = _refit(pts)
         planes.append(Plane(n, d, pts, rms))
-        rest = rest.select_by_index(idx, invert=True)
+        rest = rest[~m]
     return planes
 
 
