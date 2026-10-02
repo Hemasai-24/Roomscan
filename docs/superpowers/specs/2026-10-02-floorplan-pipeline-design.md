@@ -10,13 +10,27 @@ Must run cold on an unseen space at the defense.
 
 ## Decisions (and why)
 - **Capture route: Route 2 (stock app + one-page protocol).** No Mac/TestFlight risk;
-  pipeline runs on Linux. Tools: *3D Scanner App* (Laan Labs, free, raw depth+poses+
-  intrinsics export) for LiDAR; native Camera for photos and video.
+  pipeline runs on Linux. LiDAR tool: **Stray Scanner** (free; the provided sample data is
+  in its export format: `rgb.mp4` 1920x1440@60 HEVC, `depth/*.png` 256x192 uint16 mm,
+  `confidence/*.png` 0-2, `odometry.csv` per-frame ARKit pose + intrinsics, `imu.csv`).
+  Photos and video: native Camera app.
 - **Language/stack:** Python 3.10, Open3D, NumPy/SciPy, OpenCV, PyTorch (RTX 2000 Ada, 8 GB).
   Pretrained models (disclosed): Depth Anything V2 Metric (scale), MASt3R or COLMAP
   (photo/video poses), OWLv2 (damage detection). Weights fetched by `scripts/fetch_weights.sh`.
-- **Dev data before our phone arrives:** ARKitScenes sample scenes (disclosed). Benchmark
-  numbers come only from our own captures.
+- **Primary data: the provided `sample_data/`** (one two-storey apartment):
+  `single_room` (37 s, kitchen/utility), `single_scan_floor_only` (115 s, whole floor,
+  little ceiling, loop gap 0.17 m), `single_scan_with_ceiling` (215 s, same floor,
+  loop gap 0.39 m). Uses: multi-room stitch + drift ablation (both long scans), repeatability
+  (the two long scans of the same rooms), honest-interval test (ceiling barely seen in
+  `floor_only`).
+- **Tier derivation from LiDAR captures (disclosed):** video tier = `rgb.mp4` only (depth,
+  poses, intrinsics stripped); photo tier = 2-8 sharp stills per room sampled from the
+  video into per-room folders. Our own iPhone captures, if obtained, replace these.
+- **Ground truth:** none provided. Requested from the hiring team; until then the LiDAR
+  tier is the reference for video/photo tiers, labelled as such. Own laser-measured
+  captures (if a phone is obtained) supply true GT, the damage room and the Polycam
+  head-to-head; otherwise those rows are marked not-met in the compliance matrix.
+- Video is stored rotated 90° and HEVC random seek is unreliable: decode sequentially.
 - **Honest intervals over point accuracy on thin tiers.** Calibration is scored at every
   tier; confident garbage caps the total score.
 
@@ -80,8 +94,8 @@ Compliance matrix `docs/compliance.md`, protocol `docs/capture_protocol.md`, dev
 raw data in `data/` (large files via `scripts/fetch_data.sh`).
 
 ## Schedule
-- **Oct 2 eve:** repo, schema, LiDAR tier on ARKitScenes; protocol page; **borrow iPhone
-  Pro + laser; capture benchmark tonight**.
+- **Oct 2 eve:** repo, schema, Stray Scanner ingest, LiDAR tier on `single_room`;
+  protocol page; email for ground truth; try to borrow iPhone Pro + laser.
 - **Oct 3 AM:** stitching + drift ablation; video and photo tiers.
 - **Oct 3 PM:** damage + rules; benchmark harness; first full run; head-to-head.
 - **Oct 3 night:** fix declaration → ship fix → after run.
@@ -90,4 +104,5 @@ raw data in `data/` (large files via `scripts/fetch_data.sh`).
 ## Known risks (accepted)
 Photo-tier stitching is the weakest path; mirrors/glass create phantom walls (mitigation:
 depth-confidence filtering + reflective-surface flag); 8 GB VRAM limits MASt3R frame count.
-No phone yet — if no capture by Oct 3 noon, the benchmark is not possible and we report that.
+No phone yet: damage room, Polycam head-to-head and true GT depend on obtaining one by
+Oct 3 noon; otherwise reported as gaps, not faked.
