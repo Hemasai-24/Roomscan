@@ -2,14 +2,41 @@
 [--out DIR] [--tier auto|lidar|video|photo]"""
 import argparse
 import json
+import shutil
+import sys
 from pathlib import Path
+
+from roomscan.find_surfaces import CaptureError
 
 from roomscan.save_plan import validate
 from roomscan.pipeline import detect_tier, run_lidar
 from roomscan.draw_plan import render
 
 
+ROOT = Path(__file__).resolve().parent
+
+
+def _check_tools(tier):
+    """Fail early with one readable line instead of a traceback deep inside a model."""
+    if tier in ("video", "photo"):
+        if tier == "video" and not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
+            raise CaptureError("ffmpeg/ffprobe not found: install them (sudo apt install ffmpeg)")
+        if not (ROOT / "weights").exists() or not any((ROOT / "weights").iterdir()):
+            raise CaptureError("model weights missing: run  python scripts/fetch_weights.py")
+        import torch
+        if not torch.cuda.is_available():
+            raise CaptureError("the video/photo tiers need an NVIDIA GPU with CUDA (>= 8 GB)")
+
+
 def main():
+    try:
+        _main()
+    except CaptureError as e:
+        print(f"cannot make a plan: {e}", file=sys.stderr)
+        sys.exit(2)
+
+
+def _main():
     ap = argparse.ArgumentParser()
     ap.add_argument("capture_dir", type=Path, help="Stray Scanner export folder, or a walkthrough video")
     ap.add_argument("--out", type=Path)
@@ -24,6 +51,10 @@ def main():
         raise SystemExit(f"{a.capture_dir}: --tier photo needs a folder with one subfolder of photos per room")
     if a.tier == "video" and tier == "lidar":
         tier, path = "video", path / "rgb.mp4"          # use only the colour video of a Stray capture
+    if a.tier == "lidar" and tier != "lidar":
+        raise CaptureError(f"{a.capture_dir}: --tier lidar needs a Stray Scanner folder (depth/ + odometry.csv)")
+    _check_tools(tier)
+    path = path.resolve()
     out = a.out or Path("outputs") / (path.stem if tier == "video" else path.name)
     out.mkdir(parents=True, exist_ok=True)
     if tier == "video":

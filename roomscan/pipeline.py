@@ -27,6 +27,10 @@ def detect_tier(path):
     path = Path(path)
     if path.is_dir() and is_stray(path):
         return "lidar", path
+    if path.is_dir():                                  # e.g. an unzipped export: <folder>/<recording>/
+        inner = [p for p in path.iterdir() if p.is_dir() and is_stray(p)]
+        if len(inner) == 1:
+            return "lidar", inner[0]
     from roomscan.photo_folders import is_photo_set
     if is_photo_set(path):
         return "photo", path
@@ -69,19 +73,35 @@ def run_lidar(capture_dir, drift_correction=False, tier="lidar", stride=5, captu
     angle = manhattan_angle(classes["walls"])
     masks, grid = split_rooms(classes, angle, extra_free=camera_path(cap, angle) if walkable_path else None)
     rays = list(capture_rays(cap, stride=stride))
-    rooms = []
-    for k, m in enumerate(masks):
-        s = surfaces_for_room(classes, m, grid, angle)
-        verts, edges = outline_from_mask(m, grid, s["walls"], angle)
-        wall_h = (s["ceiling"].height if s["ceiling"] else s["floor"].height + 2.6) - s["floor"].height
-        ops = find_openings(rays, edges, angle, s["floor"].height, wall_h)
-        rooms.append(measure_room(s, verts, edges, angle, ops, tier=tier, room_id=f"room_{k}"))
+    rooms, masks, room_warnings = measure_rooms(classes, masks, grid, angle, rays, tier)
     meta = {"n_frames": len(cap.frames), "n_points": int(len(pts)), "n_rooms": len(rooms),
             "manhattan_angle_rad": round(angle, 6), "drift_correction": drift_correction,
             "runtime_s": round(time.time() - t0, 1)}
     if drift:
         meta["drift"] = drift
-    return build_plan(capture_id or Path(capture_dir).name, tier, rooms, meta, adjacency(rooms, masks, grid))
+    plan = build_plan(capture_id or Path(capture_dir).resolve().name, tier, rooms, meta, adjacency(rooms, masks, grid))
+    plan["warnings"] = room_warnings + plan["warnings"]
+    return plan
+
+
+def measure_rooms(classes, masks, grid, angle, rays, tier):
+    """Measure every room on its own; a room whose geometry fails is skipped with a warning (one bad room
+    must not lose the whole capture). No room at all is a CaptureError."""
+    rooms, kept, warnings = [], [], []
+    for k, m in enumerate(masks):
+        rid = f"room_{k}"
+        try:
+            s = surfaces_for_room(classes, m, grid, angle)
+            verts, edges = outline_from_mask(m, grid, s["walls"], angle)
+            wall_h = (s["ceiling"].height if s["ceiling"] else s["floor"].height + 2.6) - s["floor"].height
+            ops = find_openings(rays, edges, angle, s["floor"].height, wall_h)
+            rooms.append(measure_room(s, verts, edges, angle, ops, tier=tier, room_id=rid))
+            kept.append(m)
+        except (ValueError, IndexError, CaptureError) as e:
+            warnings.append(f"{rid}: skipped, its outline could not be measured ({e})")
+    if not rooms:
+        raise CaptureError("no room found: walk into each room and keep the floor and walls in view")
+    return rooms, kept, warnings
 
 
 run_lidar_single = run_lidar
