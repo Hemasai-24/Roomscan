@@ -40,3 +40,18 @@ def two_rooms_with_door(door=(1.0, 1.9), door_h=2.05, h=2.5, step=0.02):
     hole = (np.abs(p[:, 0] - 4) < 0.03) & (p[:, 2] > door[0]) & (p[:, 2] < door[1]) & (p[:, 1] < door_h) \
         & (p[:, 1] > 0.02)
     return p[~hole]
+
+
+def render_box_depth(K, T_wc, lo, hi, w, h):
+    """Depth (metres, along camera z) seen from inside an axis-aligned box room lo..hi."""
+    u, v = np.meshgrid(np.arange(w) + 0.5, np.arange(h) + 0.5)
+    d_cam = np.stack([(u - K[0, 2]) / K[0, 0], (v - K[1, 2]) / K[1, 1], np.ones_like(u)], -1)
+    d_w = d_cam @ T_wc[:3, :3].T
+    o = T_wc[:3, 3]
+    t = np.full(u.shape, np.inf)
+    for ax in range(3):
+        for b in (lo[ax], hi[ax]):
+            with np.errstate(divide="ignore", invalid="ignore"):
+                ti = (b - o[ax]) / d_w[..., ax]
+            t = np.where((ti > 1e-6) & (ti < t), ti, t)
+    return t      # d_cam has z = 1, so ray parameter t equals depth

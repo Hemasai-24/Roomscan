@@ -13,12 +13,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("capture_dir", type=Path)
     ap.add_argument("--out", type=Path)
+    ap.add_argument("--drift-correction", choices=["on", "off"], default="on",
+                    help="re-align the walk so walls seen twice coincide (default on)")
     a = ap.parse_args()
     out = a.out or Path("outputs") / a.capture_dir.name
     out.mkdir(parents=True, exist_ok=True)
     if not is_stray(a.capture_dir):
         raise SystemExit(f"{a.capture_dir}: not a Stray Scanner capture (video/photo tiers: Plans 3-4)")
-    plan = run_lidar(a.capture_dir)
+    plan = run_lidar(a.capture_dir, drift_correction=(a.drift_correction == "on"))
     validate(plan)
     (out / "plan.json").write_text(json.dumps(plan, indent=2))
     render(plan, out / "plan")
