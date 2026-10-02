@@ -70,8 +70,10 @@ def run_photos(path, out_dir, reconstruct=None):
     reconstruct = reconstruct or _model_reconstruct()
     infos, images, warnings, per_room = [], [], [], {}
     for f in folders:
-        imgs, fx, names = load_room_images(f)
+        imgs, fx, names, dropped = load_room_images(f)
         rid = f.name
+        if dropped:
+            warnings.append(f"{rid}: {len(dropped)} photo(s) in the other orientation not used: {', '.join(dropped)}")
         if len(imgs) < MIN_PHOTOS:
             warnings.append(f"{rid}: {len(imgs)} photo(s); a room needs at least {MIN_PHOTOS} photos - skipped")
             continue
