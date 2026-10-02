@@ -156,3 +156,13 @@ honest, and record the numbers in `docs/TRADEOFFS.md` ("Video tier").
 
 - [ ] Script prints and writes `outputs/eval_video/<capture>.json`; run on single_room (and floor_only if
   time); update `TIER_REL["video"]` with a comment citing the measured numbers; commit.
+
+## Evidence added during implementation (Task 3, full single_room walk, 115 frames at 3 fps)
+- True camera turn between picked frames reaches 92° at 2 fps with sharpest-frame picking (fast pans), so a
+  60° flip threshold rejected real motion. At an even 3 fps the true maximum is 37–44° on all three sample
+  captures; flips are 100–175°. → sample 3 fps, flip threshold 75°, and drop shared frames that disagree by
+  > 20° when gluing chunks.
+- Chunk 20 / overlap 5 / 392x518: 3 segments. Segment 0 (35 frames, 4.2 m walk): rotation median 1.4°,
+  camera centre median 13 cm. Segments after the bathroom mirror: rotation 10–12°, centre 26–46 cm.
+- Chunk 32 / overlap 8 / 294x392: worse (rotation 3.5–24°). Chunk 20 / overlap 10: 2 segments but centre
+  error 29–69 cm (bad joins accepted). → keep 20 / 5; the pipeline uses the largest segment and warns.
