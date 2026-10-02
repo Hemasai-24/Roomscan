@@ -41,3 +41,16 @@ def test_tiny_floor_patch_is_not_a_room():
     patch = np.c_[xs.ravel(), np.zeros(xs.size), zs.ravel()]
     rooms, _ = _split(np.concatenate([p, patch]))
     assert len(rooms) == 1
+
+
+def test_walkable_path_fills_unseen_floor():
+    """Video sees little floor: with only wall points, a camera path through both rooms recovers them."""
+    p = two_rooms_with_door()
+    c = _classes(p)
+    a = manhattan_angle(c["walls"])
+    fl = c["floor"].inliers
+    c["floor"].inliers = fl[(fl[:, 0] > 1.8) & (fl[:, 0] < 2.2)]     # floor seen only in a thin strip
+    assert len(split_rooms(c, a)[0]) < 2
+    path = np.c_[np.linspace(0.8, 6.2, 400), np.full(400, 1.45)]       # walk across both rooms, through the door
+    rooms, g = split_rooms(c, a, extra_free=path, extra_radius=0.9)
+    assert len(rooms) == 2

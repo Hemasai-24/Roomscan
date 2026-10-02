@@ -21,18 +21,24 @@ def _fill_holes(m):
     return m | (pad[1:-1, 1:-1] == 1)
 
 
-def split_rooms(classes, angle, cell=0.05, core=0.45, min_area=1.0, merge_len=1.2):
+def split_rooms(classes, angle, cell=0.05, core=0.45, min_area=1.0, merge_len=1.2, extra_free=None, extra_radius=0.5):
+    """extra_free: optional (N,2) plan points known to be walkable (video tier: the camera path), each
+    widened to a disc of extra_radius; walls still cut it. LiDAR leaves it None."""
     fh = classes["floor"].height
     floor_q = to_plan(classes["floor"].inliers, angle)
     walls = [w for w in classes["walls"] if is_tall_wall(w, fh)]
     wall_pts = np.concatenate([w.inliers[(w.inliers[:, 1] - fh > 0.1) & (w.inliers[:, 1] - fh < 2.0)]
                                for w in walls]) if walls else np.zeros((0, 3))
     wall_q = to_plan(wall_pts, angle)
-    allq = np.concatenate([floor_q, wall_q])
+    extra = np.zeros((0, 2)) if extra_free is None else np.asarray(extra_free, float)
+    allq = np.concatenate([floor_q, wall_q, extra])
     lo = allq.min(0) - 0.3
     W, H = ((allq.max(0) - lo) / cell).astype(int) + 8
     g = Grid(lo, cell, (H, W))
     free = cv2.morphologyEx(g.raster(floor_q), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    if len(extra):
+        r = int(round(extra_radius / cell))
+        free |= cv2.dilate(g.raster(extra), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1)))
     wall = cv2.dilate(g.raster(wall_q), np.ones((3, 3), np.uint8))
     free[wall > 0] = 0
     dist = cv2.distanceTransform(free, cv2.DIST_L2, 5) * cell

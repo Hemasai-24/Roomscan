@@ -85,3 +85,9 @@ def test_one_bad_shared_frame_does_not_bend_the_merge():
     for i, T in zip(m["idx"], m["T"]):
         if i >= 20:
             np.testing.assert_allclose(apply_similarity(sims[0], T), truth[i], atol=1e-6)
+
+
+def test_pick_segment_prefers_flattest_floor():
+    from roomscan.video_pipeline import pick_segment
+    assert pick_segment({0: (35, 0.034), 1: (27, 0.15), 2: (50, 0.18)}, min_frames=12) == 0
+    assert pick_segment({0: (5, 0.01), 1: (27, 0.15)}, min_frames=12) == 1

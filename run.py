@@ -1,26 +1,33 @@
-"""One command per capture: python run.py <capture_dir> [--out DIR]"""
+"""One command per capture: python run.py <Stray folder | video file> [--out DIR] [--tier auto|lidar|video]"""
 import argparse
 import json
 from pathlib import Path
 
-from roomscan.load_capture import is_stray
 from roomscan.save_plan import validate
-from roomscan.pipeline import run_lidar
+from roomscan.pipeline import detect_tier, run_lidar
 from roomscan.draw_plan import render
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("capture_dir", type=Path)
+    ap.add_argument("capture_dir", type=Path, help="Stray Scanner export folder, or a walkthrough video")
     ap.add_argument("--out", type=Path)
     ap.add_argument("--drift-correction", choices=["on", "off"], default="off",
                     help="re-align the walk so walls seen twice coincide (default off: see docs/TRADEOFFS.md)")
+    ap.add_argument("--tier", choices=["auto", "lidar", "video"], default="auto")
+    ap.add_argument("--rotate", type=int, choices=[0, 90, 180, 270], default=0,
+                    help="video only: clockwise turn to make frames upright (Stray Scanner rgb.mp4 needs 90)")
     a = ap.parse_args()
-    out = a.out or Path("outputs") / a.capture_dir.name
+    tier, path = detect_tier(a.capture_dir)
+    if a.tier == "video" and tier == "lidar":
+        tier, path = "video", path / "rgb.mp4"          # use only the colour video of a Stray capture
+    out = a.out or Path("outputs") / (path.stem if tier == "video" else path.name)
     out.mkdir(parents=True, exist_ok=True)
-    if not is_stray(a.capture_dir):
-        raise SystemExit(f"{a.capture_dir}: not a Stray Scanner capture (video/photo tiers: Plans 3-4)")
-    plan = run_lidar(a.capture_dir, drift_correction=(a.drift_correction == "on"))
+    if tier == "video":
+        from roomscan.video_pipeline import run_video
+        plan = run_video(path, out, rotate=a.rotate)
+    else:
+        plan = run_lidar(path, drift_correction=(a.drift_correction == "on"))
     validate(plan)
     (out / "plan.json").write_text(json.dumps(plan, indent=2))
     render(plan, out / "plan")
