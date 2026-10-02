@@ -95,18 +95,32 @@ their ranges are. That is how "the same output contract from each tier" is met.
 ## 8. Video tier
 - **Front end:** pick sharp frames (3 per second), estimate camera poses + depth with **VGGT**
   (Meta, 2025) in 20-frame chunks overlapping by 5; real-world scale from **Depth Anything V2
-  Metric-Indoor** (it reads depth 1.41x too far on the sample phone → calibrated); package as a
-  Stray-like capture → same back end.
-- **Fitting an 8 GB GPU:** VGGT ran out of memory as shipped; works in bf16 with only the
-  needed layers (20 frames: 5.5 s, 5.5 GB).
+  Metric-Indoor** (it reads depth 1.41x too far on the sample phone → calibrated, leave-one-out
+  scale error -2% to +4%); package as a Stray-like capture → **same back end** as LiDAR.
+- **Fitting an 8 GB GPU:** VGGT ran out of memory as shipped; works with the backbone in bf16
+  and only the 4 layers the heads use (20 frames: 5.5 s, 5.5 GB).
 - **Honest result:** poor on the sample — chunks glue together with drift, and the bathroom
-  mirror flips poses by 110-165°. Video-vs-LiDAR footprint overlap 0.08-0.22. Ranges widened.
-  **More time:** global alignment instead of chaining (MASt3R-SfM style), mirror masking.
+  mirror flips poses by 110-165°; only one room's worth of the walk survives. Footprint overlap
+  with LiDAR 0.08-0.22; gate (±3%) **not met**; ranges widened. Inside a good piece the scale is
+  right (camera height 1.43 m vs 1.45 m LiDAR).
+- **More time:** global alignment of all frames instead of chaining chunks; mask mirrors; try
+  MASt3R-SfM (not tried, to save setup time).
 
 ## 9. Photo tier
-- (in progress) VGGT on each room's 2-8 photos together (its best case), scale from Depth
-  Anything, one room per folder; rooms joined by matching doors (door widths + feature matches
-  between one room's door photo and the next room's photos), no overlaps allowed.
+- **Per room:** VGGT on all 2-8 photos of the room at once (its best case, no chunking), lens
+  focal length from EXIF when present, metres from Depth Anything; floor must be ≥ 0.5 m below
+  the cameras, else assume 1.4 m camera height (with a warning). One room per folder.
+- **Joining rooms (the hard gate):** two rooms are linked if a photo of one shows the inside of
+  the other (feature matches through the doorway), then placed so their doors coincide, walls
+  facing, one wall-thickness apart; any overlap is pushed out by the smallest move.
+- **Honest result on the simulated benchmark (photos picked from the sample video):** one
+  stitched plan, no overlaps (max 0.1 m²), but walls are off by a median **28%** vs LiDAR and
+  total area **+21%**; ranges widened (σ 60%) so the LiDAR value falls inside 86-93% of the
+  time when calibrated on the other capture. Gate (±8%) **not met**.
+- **Why so far off:** 2-8 photos of white walls give VGGT little to work with; the room is
+  measured from where cameras stand + visible floor, which over-/under-shoots.
+  **More time:** per-room layout model (walls from the image directly), using door width
+  (~0.8-0.9 m) and ceiling height priors as scale checks.
 
 ## 10. Process choices worth mentioning
 - Tests first for every piece (synthetic rooms with known answers), then real data.

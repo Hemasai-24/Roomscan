@@ -1,26 +1,26 @@
 # Compliance matrix
 
 Status: **done** · **partial** (works, gate not met or not fully covered) · **planned** · **gap** (not possible under our constraints — see `docs/TRADEOFFS.md`).
-Draft as of 2026-10-03 early morning; updated as work lands.
+Draft as of 2026-10-03 03:00; updated as work lands.
 
 ## Part 1 — capture and tiers
 | Requirement | File / path | Artifact | Status |
 |---|---|---|---|
 | Capture route (Route 2: stock app + one-page protocol) | `docs/capture_protocol.md` | protocol page | done (not tested on an iPhone by us) |
-| Photo tier: 2-8 stills/room, per-room folders → stitched plan | `roomscan/` photo modules (branch plan4-photo-tier), `run.py` | plan.json + plan.png | planned / in progress |
+| Photo tier: 2-8 stills/room, per-room folders → stitched plan | `roomscan/photo_*.py`, `stitch_rooms.py`, `run.py` | plan.json + plan.png | partial (stitched, no overlaps; ±8% not met: median wall error 28% on simulated photos) |
 | Video tier: handheld clip | `roomscan/video_*.py`, `run.py` | plan.json + plan.png | partial (runs; accuracy gate not met) |
 | LiDAR tier: depth, poses, intrinsics | `roomscan/load_capture.py` … `pipeline.py`, `run.py` | plan.json + plan.png | done |
-| Same output contract from each tier, intervals widen as data thins | `schema/plan.schema.json`, `roomscan/measurements.py` (TIER tables) | schema-valid JSON | done (LiDAR, video); photo planned |
+| Same output contract from each tier, intervals widen as data thins | `schema/plan.schema.json`, `roomscan/measurements.py` (TIER tables) | schema-valid JSON | done (all three tiers) |
 | Device matrix | `docs/device_matrix.md` | table | partial (accuracy cells await benchmark) |
 
 ## Part 2 — output contract and gates
 | Requirement | File / path | Artifact | Status |
 |---|---|---|---|
 | Per-room plan: walls, ceiling height, floor area, openings | `roomscan/room_outline.py`, `room_surfaces.py`, `find_doors_windows.py`, `measurements.py` | `rooms[]` in plan.json | done (outline quality partial) |
-| Stitched multi-room plan, correct adjacency | `roomscan/split_rooms.py`, `connect_rooms.py` | `adjacency[]`, plan.png | partial (LiDAR/video); photo planned |
-| Per-surface damage regions, class + metric extent | — | `damage[]` | planned |
-| Concealed-damage flags with the rule that fired | — | `concealed_damage_flags[]` | planned |
-| Scope line items keyed to surfaces | — | `scope_items[]` (surface_id ready on walls) | planned |
+| Stitched multi-room plan, correct adjacency | `roomscan/split_rooms.py`, `connect_rooms.py`, `stitch_rooms.py` | `adjacency[]`, plan.png | partial (all tiers; photo adjacency precision 0.33-0.50 vs LiDAR) |
+| Per-surface damage regions, class + metric extent | `roomscan/damage_measure.py` (+ detector in progress) | `damage[]` | partial |
+| Concealed-damage flags with the rule that fired | `roomscan/damage_rules.py` (R1-R5) | `concealed_damage_flags[]` | partial (rules built + tested; wiring in progress) |
+| Scope line items keyed to surfaces | `roomscan/repair_scope.py` | `scope_items[]` | partial (built + tested; wiring in progress) |
 | Confidence interval on every measurement | `roomscan/measurements.py` | `{value, lo, hi, unit}` everywhere | done (calibration planned) |
 | One command per capture | `run.py` | CLI | done |
 | JSON to the published schema | `schema/plan.schema.json`, `roomscan/save_plan.py` | validated on every run | done |
@@ -30,7 +30,7 @@ Draft as of 2026-10-03 early morning; updated as work lands.
 | Gate: ceiling height ≤ 1.5 cm; repeat spread ≤ 1 cm | — | benchmark report | planned |
 | Gate: repeatability ≤ 1 cm / 0.5% per wall | `scripts/repeatability.py`, `roomscan/compare_plans.py` | repeatability table | partial (runs; 0/14 walls pass on sample) |
 | Gate: drift accountability + on/off ablation | `roomscan/drift_correction.py`, `scripts/drift_ablation.py` | ablation table + plans | partial (method + ablation exist; no measurable gain on real sample) |
-| Gate: photo-tier whole-property stitch, ±8% footprint | photo tier (planned) | eval table | planned |
+| Gate: photo-tier whole-property stitch, ±8% footprint | `scripts/make_photo_folders.py`, `scripts/eval_photo_vs_lidar.py` | eval table | partial (stitch + no overlaps met; footprint +21%, not met) |
 | Photo ±8% / video ±3% wall lengths, calibrated | `scripts/eval_video_vs_lidar.py` | eval table | partial (video fails gate on sample) |
 
 ## Part 3 — head-to-head
