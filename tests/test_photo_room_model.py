@@ -18,7 +18,15 @@ def test_real_photos_of_sample_room_give_a_room(tmp_path):
     from roomscan.video_scale import MetricDepth, load_bias
     want = {100, 400, 700, 1000, 1300, 1600}
     imgs = np.stack([img for i, img in read_frames(SINGLE_ROOM / "rgb.mp4", (392, 518), rotate=90) if i in want])
-    cap_dir, info = photos_to_capture(imgs, None, tmp_path / "cap", VGGTRunner(root), MetricDepth(root), load_bias())
+    import gc
+    import torch
+    runner, metric = VGGTRunner(root), MetricDepth(root)
+    try:
+        cap_dir, info = photos_to_capture(imgs, None, tmp_path / "cap", runner, metric, load_bias())
+    finally:                       # free the GPU for later tests that start run.py in a subprocess
+        del runner, metric
+        gc.collect()
+        torch.cuda.empty_cache()
     out = measure_photo_room(cap_dir, "room")
     assert info["n_photos"] == 6
     assert len(out["room"]["polygon"]) >= 4
