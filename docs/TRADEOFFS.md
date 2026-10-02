@@ -122,3 +122,38 @@ What this means, honestly:
   beside the plan with a warning (2 on floor_only).
 - In real use the S23/iPhone protocol (corner shots across the room) should cover walls better than these
   walkthrough frames; to be re-measured on our own tape-measured rooms.
+
+## Damage
+
+**Models (pretrained, no training, fetched by `scripts/fetch_weights.py`):**
+| Model | Source | Revision | Licence | Use |
+|---|---|---|---|---|
+| Grounding DINO base | `IDEA-Research/grounding-dino-base` (Hugging Face) | `12bdfa3` | Apache-2.0 | boxes from the text "water stain. crack. mold. peeling paint. hole." |
+| SAM 2.1 hiera-small | `facebook/sam2.1-hiera-small` (Hugging Face, transformers `Sam2Model`) | `ee5bba1` | Apache-2.0 | exact outline inside each box |
+
+2.4 GB VRAM together, ~0.75 s per image (RTX 2000 Ada). Each mask is turned into 3D with the frame's depth
+and pose and measured on the wall/floor/ceiling plane it lies on (area, width, height, height above floor).
+
+**No damage in the sample flat, so we measured false alarms there and recall on painted damage:**
+- Detector alone, 20 frames: false alarms 33 / 17 / 7 / 2 / 0 at score 0.25 / 0.30 / 0.35 / 0.40 / 0.45 (tile
+  grout as "crack", plants and posters as "peeling paint", ceiling lights and vents as "hole"). A stain and a
+  jagged line painted onto a frame score 0.44 / 0.46 — so a high threshold would also miss real damage. We keep
+  0.35 and filter instead: a region must be seen in **2+ views** (LiDAR/video), **no "hole" on ceilings**,
+  **floors keep only mould** (shiny tiles: reflections and grout — the brief's "wet-look surfaces"), and wall
+  damage lying entirely in the **bottom 12 cm** (skirting-board joint) is dropped.
+- Full pipeline on the three undamaged captures (2 views/s, max 150, 1280 px): **0 / 2 / 3 false regions**
+  (single_room / floor_only / with_ceiling), from 1 / 10 / 4 before the floor and skirting rules. The 5 left are
+  persistent look-alikes (a door edge, a poster, a vent, a shelf edge) — multiple views cannot reject those.
+- **Painted damage with known truth** (`scripts/synthetic_damage_e2e.py`: 0.40 x 0.30 m stain and 0.60 m crack
+  drawn in 3D on a real wall of with_ceiling, true poses, depth occlusion): the stain was visible in only 3 of
+  150 views; it **was found** (2 views, right height) but split into 3 records because it sat on an inside
+  corner next to a partition; their summed area 0.17 m2 vs 0.094 m2 true (pieces overlap). **The painted crack
+  was not detected** (the detector finds jagged lines in a single close frame but not this one across views).
+- Settings trade-off: at 1 view/s (60 views, 640 px) false alarms were 0/0/0 but the painted stain was seen in
+  only one view and was dropped. We chose recall (2 views/s); the reviewer sees `n_views` and `score` on every
+  region.
+
+**Known limits:** thin cracks are weak; a stain on an inside corner is reported per wall; photo-tier damage is
+kept from a single view (`single_view: true`) because a room has only 2-8 photos; photo rooms have no
+`floor_level` (rule R5 cannot fire there); damage on a floor is only reported as mould. Real staged damage on
+our own S23 benchmark room (`data/ground_truth/own_rooms.csv`, `scripts/eval_damage.py`) is the true test.
