@@ -64,9 +64,11 @@ def add_damage(plan, cap, capture_dir, geoms, tier, detect=None):
     t0 = time.time()
     free_gpu()
     surfaces = [x for rid, s, edges, verts, angle in geoms for x in room_surface_list(rid, s, edges, angle, verts)]
-    found = filter_damage(damage_for_capture(cap, capture_dir, surfaces, tier, detect=detect), tier)
+    measured = damage_for_capture(cap, capture_dir, surfaces, tier, detect=detect)
+    found = filter_damage(measured, tier)
     annotate(found, {r["id"]: r for r in plan["rooms"]}, {g[0]: g[4] for g in geoms})
     finish_plan(plan, found)
+    plan["meta"]["damage_candidates"] = len(measured)       # on a surface, before the views/class filters
     plan["meta"]["damage_s"] = round(time.time() - t0, 1)
     return plan
 

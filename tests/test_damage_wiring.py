@@ -43,6 +43,7 @@ def test_lidar_run_fills_damage_flags_scope_and_floor_level(tmp_path):
     assert any(i["action"] == "stain_block_and_repaint" for i in plan["scope_items"])
     assert all(r["floor_level"] == 0.0 for r in plan["rooms"] if len(plan["rooms"]) == 1)
     assert "damage_s" in plan["meta"]
+    assert plan["meta"]["damage_candidates"] >= len(plan["damage"])
 
 
 def test_run_py_no_damage_flag(tmp_path):
