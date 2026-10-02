@@ -12,7 +12,7 @@ WALL_THICKNESS = 0.15
 MIN_MATCHES = 25
 MAX_OVERLAP = 0.1          # m2
 AIM_MAX_DEG = 60.0         # a photo "looks at" a door if the door is within this angle of its view direction
-PUSH_STEP, PUSH_MAX = 0.05, 4.0
+PUSH_STEP = 0.05
 VIRTUAL_DOOR_WIDTH = 0.8
 
 
@@ -124,13 +124,18 @@ def _candidates(infos, rooms, placed_idx, i, j, link, used):
     return out
 
 
-def _push(room, placed, normal):
-    """Move room along `normal` until it overlaps placed rooms by <= MAX_OVERLAP."""
-    for k in range(int(PUSH_MAX / PUSH_STEP) + 1):
-        moved = transform_room(room, np.eye(2), normal * PUSH_STEP * k)
-        if _overlap(moved, placed) <= MAX_OVERLAP:
-            return moved, PUSH_STEP * k
-    return moved, PUSH_MAX
+def resolve_overlap(room, placed, normal):
+    """Smallest move (away from the door first, then sideways, then back) after which the room overlaps the
+    placed rooms by <= MAX_OVERLAP. Always succeeds: far enough away nothing overlaps."""
+    n = _unit(normal)
+    dirs = [n, np.array([-n[1], n[0]]), np.array([n[1], -n[0]]), -n]
+    k = 0
+    while True:
+        for d in dirs:
+            moved = transform_room(room, np.eye(2), d * PUSH_STEP * k)
+            if _overlap(moved, placed) <= MAX_OVERLAP:
+                return moved, PUSH_STEP * k
+        k += 1
 
 
 def stitch(infos, links):
@@ -161,7 +166,7 @@ def stitch(infos, links):
         room = transform_room(infos[b]["room"], R, t)
         pushed = 0.0
         if ov > MAX_OVERLAP:
-            room, pushed = _push(room, [rooms[p] for p in placed], _unit(da["normal_out"]))
+            room, pushed = resolve_overlap(room, [rooms[p] for p in placed], _unit(da["normal_out"]))
             warnings.append(f"{room['id']}: pushed {pushed:.2f} m away from {rooms[a]['id']} to avoid overlap")
         rooms[b] = room
         placed.append(b)

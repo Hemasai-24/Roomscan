@@ -84,6 +84,26 @@ def test_room_without_doors_linked_by_photo_gets_virtual_door():
     np.testing.assert_allclose(vd["mid"], [0.0, 1.5])
 
 
+def test_overlap_resolved_even_when_pushing_along_the_door_is_not_enough():
+    a = make_room("A", [(0, 0), (4, 0), (4, 3), (0, 3)], doors=[(2, 1.0, 0.9), (3, 0.3, 0.9)])
+    b = make_room("B", [(0, 0), (3, 0), (3, 4), (0, 4)], doors=[(0, 2.5, 0.9)])
+    huge = make_room("C", [(0, 0), (12, 0), (12, 12), (0, 12)], doors=[(1, 5.55, 0.9)])   # north of A, x up to 9.25
+    rooms, adj, warns = stitch([info(a, [(2, 1.5)], [(1, 0)]), info(b, [(1.5, 2)], [(-1, 0)]),
+                                info(huge, [(6, 6)], [(0, -1)])],
+                               {(0, 1): {"matches": 60, "photo_i": 0, "photo_j": 0},
+                                (0, 2): {"matches": 95, "photo_i": 0, "photo_j": 0}})
+    assert _overlaps(rooms) <= 0.1
+
+
+def test_resolve_overlap_moves_far_enough_in_some_direction():
+    from roomscan.stitch_rooms import resolve_overlap
+    big = make_room("P", [(0, 0), (20, 0), (20, 14), (0, 14)])
+    small = make_room("S", [(9, 6), (11, 6), (11, 8), (9, 8)])
+    moved, dist = resolve_overlap(small, [big], np.array([1.0, 0.0]))
+    assert Polygon(moved["polygon"]).intersection(Polygon(big["polygon"])).area <= 0.1
+    assert dist < 8.5          # nearest free side is north/south (~7.95 m), not east (~11 m)
+
+
 def test_room_without_doors_can_link_to_several_rooms():
     hub = make_room("H", [(0, 0), (4, 0), (4, 4), (0, 4)])                 # no detected doors
     b = make_room("B", [(0, 0), (3, 0), (3, 3), (0, 3)], doors=[(0, 1.2, 0.9)])
