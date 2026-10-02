@@ -21,7 +21,7 @@ def _fill_holes(m):
     return m | (pad[1:-1, 1:-1] == 1)
 
 
-def split_rooms(classes, angle, cell=0.05, core=0.45, min_area=1.0, merge_len=1.2, extra_free=None, extra_radius=0.5):
+def split_rooms(classes, angle, cell=0.05, core=0.45, min_area=1.0, small_area=0.6, merge_len=1.2, extra_free=None, extra_radius=0.5):
     """extra_free: optional (N,2) plan points known to be walkable (video tier: the camera path), each
     widened to a disc of extra_radius; walls still cut it. LiDAR leaves it None."""
     fh = classes["floor"].height
@@ -43,13 +43,32 @@ def split_rooms(classes, angle, cell=0.05, core=0.45, min_area=1.0, merge_len=1.
     free[wall > 0] = 0
     dist = cv2.distanceTransform(free, cv2.DIST_L2, 5) * cell
     n, cores = cv2.connectedComponents((dist > core).astype(np.uint8))
+    # a walkable area with no point > `core` from a wall (WC, lone corridor) is still a room:
+    # seed it with its own most-central part instead of letting it vanish
+    nf, free_lab = cv2.connectedComponents(free)
+    for k in range(1, nf):
+        comp = free_lab == k
+        if not cores[comp].any() and comp.sum() * cell * cell >= min_area / 2:
+            cores[comp & (dist >= 0.5 * dist[comp].max())] = n
+            n += 1
     markers = cores.astype(np.int32)
     markers[free == 0] = n                       # walls + outside: their own basin
     cv2.watershed(cv2.cvtColor(free * 255, cv2.COLOR_GRAY2BGR), markers)
     rooms = [(markers == k) & (free > 0) for k in range(1, n)]
     rooms = _merge_open(rooms, merge_len, cell)
     rooms = _grow_to_walls([_fill_holes(m) for m in rooms], grow=2)
-    return [m for m in rooms if m.sum() * cell * cell >= min_area], g
+    keep = []
+    for m in rooms:
+        a = m.sum() * cell * cell
+        if a >= min_area or (a >= small_area and _wall_enclosed(m, wall) >= 0.5):   # a WC is boxed in by walls;
+            keep.append(m)                                                           # a patch seen through a door is not
+    return keep, g
+
+
+def _wall_enclosed(mask, wall):
+    """Share of the cells just outside the room that are wall."""
+    ring = (cv2.dilate(mask.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0) & ~mask
+    return float((ring & (wall > 0)).sum()) / max(int(ring.sum()), 1)
 
 
 def _grow_to_walls(rooms, grow):

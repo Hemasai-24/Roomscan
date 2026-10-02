@@ -54,3 +54,22 @@ def test_walkable_path_fills_unseen_floor():
     path = np.c_[np.linspace(0.8, 6.2, 400), np.full(400, 1.45)]       # walk across both rooms, through the door
     rooms, g = split_rooms(c, a, extra_free=path, extra_radius=0.9)
     assert len(rooms) == 2
+
+
+def test_small_wc_is_a_room():
+    rooms, g = _split(room_points([(0, 0), (0.85, 0), (0.85, 1.2), (0, 1.2)], 2.5))
+    assert len(rooms) == 1
+
+
+def test_narrow_corridor_alone_is_a_room():
+    rooms, g = _split(room_points([(0, 0), (4, 0), (4, 0.95), (0, 0.95)], 2.5))
+    assert len(rooms) == 1
+
+
+def test_narrow_corridor_between_rooms_is_its_own_room():
+    from tests.synthetic_rooms import rooms_with_doors
+    p = rooms_with_doors([(0, 0, 3, 3), (3, 0, 3.9, 3), (3.9, 0, 6.9, 3)], [(3, 1.1, 1.9), (3.9, 1.1, 1.9)])
+    rooms, g = _split(p)
+    areas = sorted(m.sum() * g.cell ** 2 for m in rooms)
+    assert len(rooms) == 3
+    np.testing.assert_allclose(areas, [2.7, 9.0, 9.0], rtol=0.2)

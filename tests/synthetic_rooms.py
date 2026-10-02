@@ -55,3 +55,13 @@ def render_box_depth(K, T_wc, lo, hi, w, h):
                 ti = (b - o[ax]) / d_w[..., ax]
             t = np.where((ti > 1e-6) & (ti < t), ti, t)
     return t      # d_cam has z = 1, so ray parameter t equals depth
+
+
+def rooms_with_doors(rects, doors, h=2.5, step=0.02, door_h=2.05):
+    """Axis-aligned rooms rects=[(x0,z0,x1,z1)], doors=[(x_wall, z0, z1)] holes in walls at x = x_wall."""
+    p = np.concatenate([room_points([(a, b), (c, b), (c, d), (a, d)], h, step=step, seed=i)
+                        for i, (a, b, c, d) in enumerate(rects)])
+    for xw, z0, z1 in doors:
+        hole = (np.abs(p[:, 0] - xw) < 0.03) & (p[:, 2] > z0) & (p[:, 2] < z1) & (p[:, 1] < door_h) & (p[:, 1] > 0.02)
+        p = p[~hole]
+    return p
