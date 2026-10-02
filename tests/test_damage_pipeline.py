@@ -29,6 +29,16 @@ def test_wall_planes_pass_through_their_wall_points():
         assert np.sum(dist < 0.03) > 2000             # many wall points lie on each edge's plane
 
 
+def test_surface_uses_fitted_wall_plane_when_outline_edge_is_off():
+    from dataclasses import replace
+    c, verts, edges, angle = _box_room()
+    shifted = [replace(e, offset=e.offset + 0.2) for e in edges]       # outline 20 cm off the real walls
+    walls_pts = np.concatenate([w.inliers for w in c["walls"]])
+    for srf in room_surface_list("room_0", c, shifted, angle, verts)[:len(edges)]:
+        dist = np.abs(walls_pts @ srf["normal"] + srf["d"])
+        assert np.sum(dist < 0.02) > 2000                              # surface lies on real wall points
+
+
 def test_surface_list_ids_match_room_record_and_include_floor_and_ceiling():
     c, verts, edges, angle = _box_room()
     s = room_surface_list("room_0", c, edges, angle, verts)

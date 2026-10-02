@@ -29,11 +29,34 @@ def wall_plane(edge, angle):
     return n, -float(edge.offset)
 
 
+WALL_MATCH = 0.30            # m: a fitted wall plane this close to an outline edge is that edge's real surface
+
+
+def _fitted_plane(edge, walls, angle):
+    """The fitted wall plane behind an outline edge (outlines are not always snapped onto the wall face):
+    same direction, offset within WALL_MATCH, overlapping along the edge. None if no plane matches."""
+    k = 0 if edge.axis == "u" else 1
+    lo, hi = min(edge.start, edge.end), max(edge.start, edge.end)
+    best = None
+    for w in walls:
+        n = to_plan(np.asarray(w.normal, float)[None], angle)[0]
+        if abs(n[k]) < 0.9:
+            continue
+        q = to_plan(w.inliers, angle)
+        off = float(np.median(q[:, k]))
+        overlap = min(hi, q[:, 1 - k].max()) - max(lo, q[:, 1 - k].min())
+        if abs(off - edge.offset) < WALL_MATCH and overlap > 0.2 * (hi - lo):
+            if best is None or abs(off - edge.offset) < best[0]:
+                best = (abs(off - edge.offset), w)
+    return None if best is None else best[1]
+
+
 def room_surface_list(room_id, s, edges, angle, verts):
     fh = float(s["floor"].height)
     out = []
     for i, e in enumerate(edges):
-        n, d = wall_plane(e, angle)
+        w = _fitted_plane(e, s.get("walls", []), angle)
+        n, d = (np.asarray(w.normal, float), float(w.d)) if w is not None else wall_plane(e, angle)
         out.append({"surface_id": f"{room_id}_w{i}", "room_id": room_id, "kind": "wall", "normal": n, "d": d,
                     "floor_h": fh, "extent": {"angle": angle, "axis": e.axis, "lo": min(e.start, e.end),
                                               "hi": max(e.start, e.end)}})
