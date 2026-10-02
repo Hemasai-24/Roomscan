@@ -20,6 +20,30 @@ def video_info(path):
     return n, n / dur
 
 
+PORTRAIT, LANDSCAPE = (392, 518), (518, 392)    # (W, H) at the 3D model's input; multiples of 14 px
+
+
+def display_size(path):
+    """(width, height) as the video is shown, i.e. after the phone's rotation metadata."""
+    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_streams", "-of", "json",
+                          str(path)], capture_output=True, text=True, check=True)    # works on ffprobe 4.x-7.x
+    st = json.loads(out.stdout)["streams"][0]
+    rot = int(float(st.get("tags", {}).get("rotate", 0) or 0))
+    for sd in st.get("side_data_list", []):
+        if "rotation" in sd:
+            rot = int(float(sd["rotation"]))
+    w, h = int(st["width"]), int(st["height"])
+    return (h, w) if rot % 180 else (w, h)
+
+
+def model_size(path, rotate=0):
+    """Model input size keeping the video's shape: landscape clips stay landscape (never squashed)."""
+    w, h = display_size(path)
+    if rotate % 180:
+        w, h = h, w
+    return LANDSCAPE if w > h else PORTRAIT
+
+
 def read_frames(path, size, rotate=0):
     """Yield (index, RGB uint8 image of `size`=(w, h)) for every frame. `rotate` is applied before resizing;
     phone videos with rotation metadata are auto-rotated by ffmpeg anyway."""

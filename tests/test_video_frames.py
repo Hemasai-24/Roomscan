@@ -53,3 +53,16 @@ def test_rotate_90_is_clockwise(video):
     # clockwise: the top-left red marker moves to the top-right
     assert rot[:20, -20:, 0].mean() > 150 and rot[:20, -20:, 2].mean() < 100
     assert plain[:20, :20, 0].mean() > 150
+
+
+def test_model_size_follows_video_orientation(video, tmp_path):
+    from roomscan.video_frames import model_size
+    p, _ = video                                            # 160 x 120: landscape
+    assert model_size(p) == (518, 392)
+    assert model_size(p, rotate=90) == (392, 518)
+    # phone-style portrait: landscape pixels + rotation metadata
+    q = tmp_path / "portrait_meta.mp4"
+    import subprocess
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(p), "-c", "copy", "-metadata:s:v:0", "rotate=90", str(q)],
+                   check=True)
+    assert model_size(q) == (392, 518)
