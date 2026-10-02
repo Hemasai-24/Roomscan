@@ -1,4 +1,4 @@
-"""Manhattan-aligned rectilinear room footprint, edges snapped to fitted wall planes."""
+"""Step 4: room outline seen from above, squared to the main wall directions and snapped to fitted walls."""
 from dataclasses import dataclass
 
 import cv2

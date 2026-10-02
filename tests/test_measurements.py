@@ -1,9 +1,9 @@
 import numpy as np
-from fpp.geometry.planes import classify_planes, extract_planes
-from fpp.geometry.room import footprint
-from fpp.measure import measure_room
-from fpp.uncertainty import interval
-from tests.synth import room_points
+from roomscan.find_surfaces import classify_planes, extract_planes
+from roomscan.room_outline import footprint
+from roomscan.measurements import measure_room
+from roomscan.measurements import interval
+from tests.synthetic_rooms import room_points
 
 
 def test_interval_symmetric_95():

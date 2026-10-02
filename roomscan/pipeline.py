@@ -1,13 +1,14 @@
+"""Runs steps 1-7 in order for one LiDAR capture."""
 import time
 from pathlib import Path
 
-from fpp.geometry.fuse import fuse_points
-from fpp.geometry.openings import capture_rays, find_openings
-from fpp.geometry.planes import classify_planes, extract_planes
-from fpp.geometry.room import footprint
-from fpp.ingest.stray import load_stray
-from fpp.measure import measure_room
-from fpp.output import build_plan
+from roomscan.point_cloud import fuse_points
+from roomscan.find_doors_windows import capture_rays, find_openings
+from roomscan.find_surfaces import classify_planes, extract_planes
+from roomscan.room_outline import footprint
+from roomscan.load_capture import load_stray
+from roomscan.measurements import measure_room
+from roomscan.save_plan import build_plan
 
 
 def run_lidar_single(capture_dir):

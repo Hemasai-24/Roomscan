@@ -1,3 +1,4 @@
+"""Step 7b: draw the floor plan (walls with lengths and ranges, doors orange, windows blue) to SVG/PNG."""
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

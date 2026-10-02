@@ -1,3 +1,4 @@
+"""Step 7a: build the output JSON document and validate it against schema/plan.schema.json."""
 import json
 from pathlib import Path
 

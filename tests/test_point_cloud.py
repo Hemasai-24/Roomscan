@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
-from fpp.geometry.fuse import backproject, fuse_points
-from fpp.ingest.stray import load_stray
+from roomscan.point_cloud import backproject, fuse_points
+from roomscan.load_capture import load_stray
 
 
 def K():

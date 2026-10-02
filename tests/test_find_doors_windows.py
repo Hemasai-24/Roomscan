@@ -1,6 +1,6 @@
 import numpy as np
-from fpp.geometry.openings import find_openings
-from fpp.geometry.room import Edge
+from roomscan.find_doors_windows import find_openings
+from roomscan.room_outline import Edge
 
 
 def _rays_through(wall_v, hole, behind=1.0, cam=(2.0, 1.4, 1.0), seed=0):

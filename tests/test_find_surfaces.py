@@ -1,6 +1,6 @@
 import numpy as np
-from fpp.geometry.planes import classify_planes, extract_planes
-from tests.synth import room_points, table_points
+from roomscan.find_surfaces import classify_planes, extract_planes
+from tests.synthetic_rooms import room_points, table_points
 
 
 def test_box_room_planes():
@@ -39,7 +39,7 @@ def test_near_coplanar_floor_slabs_merge():
 
 def test_no_floor_raises_capture_error():
     import pytest
-    from fpp.geometry.planes import CaptureError
+    from roomscan.find_surfaces import CaptureError
     walls_only = room_points([(0, 0), (4, 0), (4, 3), (0, 3)], 2.6, ceiling=False)
     walls_only = walls_only[walls_only[:, 1] > 0.3]
     with pytest.raises(CaptureError):

@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from fpp.output import build_plan, validate
+from roomscan.save_plan import build_plan, validate
 from tests.conftest import SINGLE_ROOM, need_sample
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -1,4 +1,4 @@
-"""Depth back-projection into a fused world point cloud."""
+"""Step 2: turn depth images into 3D points in room coordinates (one fused point cloud)."""
 import numpy as np
 import open3d as o3d
 

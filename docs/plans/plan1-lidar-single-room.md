@@ -1,5 +1,8 @@
 # Plan 1: LiDAR Single-Room Pipeline Implementation Plan
 
+> Note (after implementation): the package `fpp/` was renamed to `roomscan/` with clearer file names
+> (see README "Code map"). Code below shows the original names.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `python run.py sample_data/single_room/c00a170fe1` produces `plan.json` (schema-valid) and `plan.svg/png` with walls, floor area, ceiling height and openings, each with a 95% interval.

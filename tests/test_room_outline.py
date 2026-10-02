@@ -1,8 +1,8 @@
 import numpy as np
 from shapely.geometry import Polygon
-from fpp.geometry.planes import classify_planes, extract_planes
-from fpp.geometry.room import footprint
-from tests.synth import room_points
+from roomscan.find_surfaces import classify_planes, extract_planes
+from roomscan.room_outline import footprint
+from tests.synthetic_rooms import room_points
 
 
 def _rot(p, deg):

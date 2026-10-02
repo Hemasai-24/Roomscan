@@ -3,10 +3,10 @@ import argparse
 import json
 from pathlib import Path
 
-from fpp.ingest.stray import is_stray
-from fpp.output import validate
-from fpp.pipeline import run_lidar_single
-from fpp.render import render
+from roomscan.load_capture import is_stray
+from roomscan.save_plan import validate
+from roomscan.pipeline import run_lidar_single
+from roomscan.draw_plan import render
 
 
 def main():

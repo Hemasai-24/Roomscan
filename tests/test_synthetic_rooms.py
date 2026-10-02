@@ -1,5 +1,5 @@
 import numpy as np
-from tests.synth import room_points
+from tests.synthetic_rooms import room_points
 
 
 def test_box_room_extents():

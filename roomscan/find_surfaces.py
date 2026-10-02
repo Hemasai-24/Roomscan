@@ -1,4 +1,4 @@
-"""Deterministic iterative RANSAC planes + floor/ceiling/wall classification."""
+"""Step 3: find flat surfaces (RANSAC planes) and label them floor / ceiling / wall / other."""
 from dataclasses import dataclass
 
 import numpy as np

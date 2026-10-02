@@ -1,4 +1,4 @@
-"""Loader for Stray Scanner exports (rgb.mp4, depth/, confidence/, odometry.csv)."""
+"""Step 1: load a Stray Scanner export (rgb.mp4, depth/, confidence/, odometry.csv)."""
 from dataclasses import dataclass
 from pathlib import Path
 

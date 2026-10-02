@@ -1,12 +1,12 @@
-"""Openings = wall regions that depth rays pass THROUGH (free-space evidence).
-An unobserved wall region has no evidence and is never an opening."""
+"""Step 5: doors and windows = parts of a wall that depth rays passed THROUGH.
+A wall area the camera never looked at has no such rays, so it is never reported as an opening."""
 from dataclasses import dataclass
 
 import cv2
 import numpy as np
 
-from fpp.geometry.fuse import backproject
-from fpp.geometry.room import to_plan
+from roomscan.point_cloud import backproject
+from roomscan.room_outline import to_plan
 
 BEYOND = 0.15          # ray must end this far past the wall plane
 MIN_WIDTH = 0.5

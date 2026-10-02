@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import pytest
-from fpp.ingest.stray import is_stray, load_stray
+from roomscan.load_capture import is_stray, load_stray
 from tests.conftest import SINGLE_ROOM, need_sample
 
 IDENT = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0))
