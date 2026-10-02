@@ -61,3 +61,17 @@ def test_video_ranges_reflect_measured_video_error():
     sig = np.sqrt(2 * TIER_SIGMA_FLOOR["video"] ** 2 + (TIER_REL["video"] * L) ** 2)
     m = interval(L, sig)
     assert (m.hi - m.lo) / 2 >= 0.4 * L
+
+
+def test_ranges_never_negative():
+    assert interval(0.1, 1.0).lo == 0.0
+
+
+def test_unseen_ceiling_in_video_tier_includes_scale_uncertainty():
+    p = room_points([(0, 0), (4, 0), (4, 3), (0, 3)], 2.6, ceiling=False)
+    c = classify_planes(extract_planes(p))
+    v, e, a = footprint(c)
+    lidar = measure_room(c, v, e, a, [], tier="lidar")["ceiling_height"]
+    video = measure_room(c, v, e, a, [], tier="video")["ceiling_height"]
+    assert video["lo"] < lidar["lo"] - 0.3          # walls seen up to 2.6 m in a video whose scale may be 25% off
+    assert video["hi"] > lidar["hi"]

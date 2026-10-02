@@ -27,7 +27,7 @@ class Measure:
 
 def interval(value, sigma, unit="m", calib=1.0):
     h = Z95 * sigma * calib
-    return Measure(float(value), float(value - h), float(value + h), unit)
+    return Measure(float(value), max(float(value - h), 0.0), float(value + h), unit)   # lengths/areas are >= 0
 
 
 def edge_sigma(edge, tier):
@@ -52,7 +52,9 @@ def _ceiling(classes, tier, calib, warnings):
         return interval(h, np.hypot(s, TIER_REL[tier] * h), calib=calib), True
     top = max(float(np.percentile(w.inliers[:, 1], 99.5)) for w in classes["walls"]) - floor.height
     warnings.append(f"ceiling not observed: height is at least {top:.2f} m (highest wall point)")
-    lo, hi = top - 0.01, max(top + UNSEEN_CEILING_MARGIN, UNSEEN_CEILING_MAX)
+    k = Z95 * TIER_REL[tier]                      # video/photo: the measured wall top itself has scale error
+    lo = max((top - 0.01) * (1 - k), 0.0)
+    hi = max((top + UNSEEN_CEILING_MARGIN) * (1 + k), UNSEEN_CEILING_MAX)
     return Measure((lo + hi) / 2, lo, hi), False
 
 
