@@ -27,6 +27,9 @@ def detect_tier(path):
     path = Path(path)
     if path.is_dir() and is_stray(path):
         return "lidar", path
+    from roomscan.photo_folders import is_photo_set
+    if is_photo_set(path):
+        return "photo", path
     if path.is_file() and path.suffix.lower() in VIDEO_EXT:
         return "video", path
     if path.is_dir():
