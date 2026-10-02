@@ -1,0 +1,9 @@
+# Video and photo tiers (and damage detection). Versions are the ones every reported number was produced with.
+# Install after requirements.txt; needs an NVIDIA GPU with >= 8 GB and a CUDA build of torch.
+torch==2.5.1
+torchvision==0.20.1
+transformers==4.56.0
+huggingface_hub==0.35.3
+safetensors==0.6.2
+einops==0.3.2
+pillow==11.3.0
