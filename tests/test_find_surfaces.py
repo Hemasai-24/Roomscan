@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from roomscan.find_surfaces import classify_planes, extract_planes
 from tests.synthetic_rooms import room_points, table_points
@@ -44,3 +45,29 @@ def test_no_floor_raises_capture_error():
     walls_only = walls_only[walls_only[:, 1] > 0.3]
     with pytest.raises(CaptureError):
         classify_planes(extract_planes(walls_only))
+
+
+def test_no_fake_horizontal_slices_through_walls():
+    from roomscan.point_cloud import estimate_normals
+    # tall narrow room: lots of wall area, little floor -> a plain RANSAC slice at mid-height
+    # through all four walls collects more points than a real small plane
+    p = room_points([(0, 0), (1.2, 0), (1.2, 6), (0, 6)], 3.0, ceiling=False)
+    planes = extract_planes(p, estimate_normals(p), min_inliers=300)
+    horiz = [pl for pl in planes if abs(pl.normal[1]) > 0.95]
+    assert all(abs(pl.height) < 0.03 for pl in horiz)        # only the floor
+
+
+@pytest.mark.sample
+def test_sample_floor_only_finds_many_walls():
+    from tests.conftest import SAMPLE
+    from roomscan.load_capture import load_stray
+    from roomscan.point_cloud import fuse_points, estimate_normals
+    root = SAMPLE / "single_scan_floor_only" / "1a8384c3f6"
+    if not root.exists():
+        pytest.skip("sample_data not present")
+    pts = fuse_points(load_stray(root), stride=10)
+    c = classify_planes(extract_planes(pts, estimate_normals(pts)))
+    assert len(c["walls"]) >= 15
+    fh = c["floor"].height
+    fake = [p for p in c["horizontal"] if 0.2 < p.height - fh < 0.7 and len(p.inliers) > 15000]
+    assert fake == []

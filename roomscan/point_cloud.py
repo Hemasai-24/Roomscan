@@ -19,3 +19,10 @@ def fuse_points(cap, stride: int = 5, max_depth: float = 4.0, min_conf: int = 2,
               for f in cap.frames[::stride]]
     pc = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(np.concatenate(chunks)))
     return np.asarray(pc.voxel_down_sample(voxel).points)
+
+
+def estimate_normals(points, radius: float = 0.08, max_nn: int = 20):
+    """Surface direction at each point, from its neighbours (sign is arbitrary)."""
+    pc = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(points))
+    pc.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=radius, max_nn=max_nn))
+    return np.asarray(pc.normals)

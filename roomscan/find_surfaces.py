@@ -36,9 +36,12 @@ def _refit(pts):
     return n, d, rms
 
 
-def _ransac(pts, dist, iters, rng, score_n=20000, batch=250):
-    """Seeded single-threaded RANSAC: hypotheses scored on a fixed subsample. Returns inlier mask."""
-    sub = pts[rng.choice(len(pts), min(score_n, len(pts)), replace=False)]
+def _ransac(pts, nrm, dist, iters, rng, agree, score_n=20000, batch=250):
+    """Seeded single-threaded RANSAC: hypotheses scored on a fixed subsample. Returns inlier mask.
+    With normals, a point supports a plane only if it faces the same way (|n_point . n_plane| > agree)."""
+    idx = rng.choice(len(pts), min(score_n, len(pts)), replace=False)
+    sub = pts[idx]
+    sub_n = None if nrm is None else nrm[idx]
     best_n, best_cnt = None, -1
     for _ in range(0, iters, batch):
         tri = pts[rng.integers(0, len(pts), (batch, 3))]
@@ -47,28 +50,37 @@ def _ransac(pts, dist, iters, rng, score_n=20000, batch=250):
         ok = norm > 1e-9
         n = n[ok] / norm[ok, None]
         d = -np.einsum("ij,ij->i", n, tri[ok, 0])
-        cnt = (np.abs(sub @ n.T + d) < dist).sum(0)
+        good = np.abs(sub @ n.T + d) < dist
+        if sub_n is not None:
+            good &= np.abs(sub_n @ n.T) > agree
+        cnt = good.sum(0)
         j = int(np.argmax(cnt))
         if cnt[j] > best_cnt:
             best_cnt, best_n = cnt[j], (n[j], d[j])
     n, d = best_n
-    return np.abs(pts @ n + d) < dist
+    m = np.abs(pts @ n + d) < dist
+    if nrm is not None:
+        m &= np.abs(nrm @ n) > agree
+    return m
 
 
-def extract_planes(points, dist=0.02, min_inliers=1500, max_planes=30, iters=2000):
+def extract_planes(points, normals=None, dist=0.02, min_inliers=1500, max_planes=40, iters=2000, agree=0.85):
     rng = np.random.default_rng(0)
     rest = np.asarray(points, float)
+    rest_n = None if normals is None else np.asarray(normals, float)
     planes = []
     for _ in range(max_planes):
         if len(rest) < min_inliers:
             break
-        m = _ransac(rest, dist, iters, rng)
+        m = _ransac(rest, rest_n, dist, iters, rng, agree)
         if m.sum() < min_inliers:
             break
         pts = rest[m]
         n, d, rms = _refit(pts)
         planes.append(Plane(n, d, pts, rms))
         rest = rest[~m]
+        if rest_n is not None:
+            rest_n = rest_n[~m]
     return planes
 
 
@@ -99,4 +111,5 @@ def classify_planes(planes):
     if ceiling is not None:
         ceiling.kind = "ceiling"
     other = [p for p in planes if p.kind == "other"]
-    return {"floor": floor, "ceiling": ceiling, "walls": walls, "other": other, "floor_spread": spread}
+    return {"floor": floor, "ceiling": ceiling, "walls": walls, "other": other, "floor_spread": spread,
+            "horizontal": horiz}

@@ -2,7 +2,7 @@
 import time
 from pathlib import Path
 
-from roomscan.point_cloud import fuse_points
+from roomscan.point_cloud import estimate_normals, fuse_points
 from roomscan.find_doors_windows import capture_rays, find_openings
 from roomscan.find_surfaces import classify_planes, extract_planes
 from roomscan.room_outline import footprint
@@ -15,7 +15,7 @@ def run_lidar_single(capture_dir):
     t0 = time.time()
     cap = load_stray(capture_dir)
     pts = fuse_points(cap)
-    classes = classify_planes(extract_planes(pts))
+    classes = classify_planes(extract_planes(pts, estimate_normals(pts)))
     verts, edges, angle = footprint(classes)
     wall_h = (classes["ceiling"].height if classes["ceiling"] else classes["floor"].height + 2.6) \
         - classes["floor"].height

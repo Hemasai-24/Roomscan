@@ -32,3 +32,11 @@ def test_fuse_downsamples(stray_factory):
     pts = fuse_points(load_stray(root), stride=1, voxel=0.05)
     assert 0 < len(pts) < 192 * 256
     np.testing.assert_allclose(pts[:, 2], 2.0, atol=0.03)
+
+
+def test_normals_of_a_floor_point_up():
+    from roomscan.point_cloud import estimate_normals
+    xs, zs = np.meshgrid(np.arange(0, 2, 0.02), np.arange(0, 2, 0.02))
+    p = np.c_[xs.ravel(), np.zeros(xs.size), zs.ravel()]
+    n = estimate_normals(p)
+    assert np.all(np.abs(n[:, 1]) > 0.99)
