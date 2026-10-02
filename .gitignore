@@ -8,3 +8,6 @@ __pycache__/
 .superpowers/
 third_party/
 *.pdf
+.claude/
+weights
+third_party
