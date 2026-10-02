@@ -13,8 +13,9 @@ from roomscan.damage_rules import concealed_flags
 from roomscan.repair_scope import scope_items
 from roomscan.room_outline import to_plan
 
-VIEWS_PER_SEC = 1.0
-MAX_VIEWS = 60
+VIEWS_PER_SEC = 2.0
+MAX_VIEWS = 150
+DETECT_WIDTH = 1280          # px; thin cracks need the detail (Stray video is 1920 wide)
 NEAR_OPENING = 0.20          # m between damage edge and an opening side
 MIN_VIEWS = {"lidar": 2, "video": 2, "photo": 1}
 ALL = {"water_stain", "crack", "mold", "peeling_paint", "hole"}
@@ -89,7 +90,7 @@ def _frame_images(cap_dir, indices, depth_size):
                 for i in indices}
     from roomscan.video_frames import read_frames
     w, h = depth_size
-    size = (640, int(round(640 * h / w)))
+    size = (DETECT_WIDTH, int(round(DETECT_WIDTH * h / w)))
     want = set(indices)
     return {i: img for i, img in read_frames(cap_dir / "rgb.mp4", size) if i in want}
 
