@@ -7,6 +7,7 @@ Read [`docs/TRADEOFFS.md`](docs/TRADEOFFS.md) first: it lists the constraints th
 built under and what they do to the reported numbers.
 
 ## Quickstart (clean Linux machine, Python 3.10+)
+    sudo apt install ffmpeg                                   # video tier decodes with ffmpeg/ffprobe
     python3 -m venv .venv
     .venv/bin/pip install -r requirements.txt                 # LiDAR tier (CPU only)
     .venv/bin/pip install -r requirements-models.txt          # video + photo tiers (NVIDIA GPU, >= 8 GB)

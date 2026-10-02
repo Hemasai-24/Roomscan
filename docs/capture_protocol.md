@@ -25,11 +25,13 @@ You need: an **iPhone 15 or newer**. LiDAR tier needs a **Pro / Pro Max**. About
 - Same walk as the LiDAR tier (steps 2-5). One continuous clip.
 
 **Photo tier (Camera app)**
-- Camera → **Photo**, **1x** lens, no zoom, no Portrait/Panorama modes.
+- Camera → **Photo**, **1x** lens, no zoom, no Portrait/Panorama modes. Hold the phone
+  **upright (portrait)** for every photo. Turn **Live** off (top of the camera screen).
+  HEIC ("High Efficiency") and JPEG ("Most Compatible") both work.
 - In **each room**: stand in each **corner** and photograph the **opposite corner**, tilted slightly
   down so the wall-floor line shows (4 photos); then **1 photo of each door** from inside the room.
-  **2-8 photos per room.** Before each room, photograph a paper with the room's name (or keep
-  rooms in separate albums).
+  **2-8 photos per room.** Keep each room's photos together (e.g. one album per room); a
+  single room may also be passed as one plain folder of photos.
 
 ## 4. Avoid
 - Fast turns or running; pointing at the floor or ceiling only; covering the camera.
@@ -42,8 +44,8 @@ You need: an **iPhone 15 or newer**. LiDAR tier needs a **Pro / Pro Max**. About
   Copy it to the laptop (AirDrop, USB or cloud drive). The folder contains `rgb.mp4`,
   `depth/`, `confidence/`, `odometry.csv`, `camera_matrix.csv`.
 - **Video:** copy the `.mp4`/`.mov` file unedited (Photos → Share → Save to Files / AirDrop).
-- **Photos:** copy the original photos (no edits, no compression), one folder per room:
-  `my_house/kitchen/*.jpg`, `my_house/hall/*.jpg`, ...
+- **Photos:** copy the original photos (no edits, no compression), **one folder per room**:
+  `my_house/kitchen/*.HEIC`, `my_house/hall/*.HEIC`, ... (other files such as `.AAE` are ignored).
 
 Then on the laptop, **one command**:
 ```
