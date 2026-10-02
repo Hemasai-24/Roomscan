@@ -57,7 +57,22 @@ def camera_path(cap, angle, step=0.05):
     return to_plan(np.concatenate(seg) if seg else c, angle)
 
 
-def run_lidar(capture_dir, drift_correction=False, tier="lidar", stride=5, capture_id=None, walkable_path=False):
+def add_damage(plan, cap, capture_dir, geoms, tier, detect=None):
+    """geoms: [(room_id, surfaces_dict, edges, verts, angle)] -> plan damage, flags and scope filled in."""
+    from roomscan.damage_pipeline import (annotate, damage_for_capture, filter_damage, finish_plan, free_gpu,
+                                          room_surface_list)
+    t0 = time.time()
+    free_gpu()
+    surfaces = [x for rid, s, edges, verts, angle in geoms for x in room_surface_list(rid, s, edges, angle, verts)]
+    found = filter_damage(damage_for_capture(cap, capture_dir, surfaces, tier, detect=detect), tier)
+    annotate(found, {r["id"]: r for r in plan["rooms"]}, {g[0]: g[4] for g in geoms})
+    finish_plan(plan, found)
+    plan["meta"]["damage_s"] = round(time.time() - t0, 1)
+    return plan
+
+
+def run_lidar(capture_dir, drift_correction=False, tier="lidar", stride=5, capture_id=None, walkable_path=False,
+              damage=False, detect=None):
     t0 = time.time()
     cap = load_stray(capture_dir)
     drift = None
@@ -69,19 +84,25 @@ def run_lidar(capture_dir, drift_correction=False, tier="lidar", stride=5, captu
     angle = manhattan_angle(classes["walls"])
     masks, grid = split_rooms(classes, angle, extra_free=camera_path(cap, angle) if walkable_path else None)
     rays = list(capture_rays(cap, stride=stride))
-    rooms = []
+    rooms, geoms = [], []
     for k, m in enumerate(masks):
         s = surfaces_for_room(classes, m, grid, angle)
         verts, edges = outline_from_mask(m, grid, s["walls"], angle)
         wall_h = (s["ceiling"].height if s["ceiling"] else s["floor"].height + 2.6) - s["floor"].height
         ops = find_openings(rays, edges, angle, s["floor"].height, wall_h)
-        rooms.append(measure_room(s, verts, edges, angle, ops, tier=tier, room_id=f"room_{k}"))
+        room = measure_room(s, verts, edges, angle, ops, tier=tier, room_id=f"room_{k}")
+        room["floor_level"] = round(float(s["floor"].height - classes["floor"].height), 4)
+        rooms.append(room)
+        geoms.append((room["id"], s, edges, verts, angle))
     meta = {"n_frames": len(cap.frames), "n_points": int(len(pts)), "n_rooms": len(rooms),
             "manhattan_angle_rad": round(angle, 6), "drift_correction": drift_correction,
             "runtime_s": round(time.time() - t0, 1)}
     if drift:
         meta["drift"] = drift
-    return build_plan(capture_id or Path(capture_dir).name, tier, rooms, meta, adjacency(rooms, masks, grid))
+    plan = build_plan(capture_id or Path(capture_dir).name, tier, rooms, meta, adjacency(rooms, masks, grid))
+    if damage:
+        add_damage(plan, cap, capture_dir, geoms, tier, detect=detect)
+    return plan
 
 
 run_lidar_single = run_lidar

@@ -82,3 +82,24 @@ def test_cli_detects_photo_set(tmp_path):
     r = subprocess.run([sys.executable, str(root / "run.py"), str(tmp_path / "nothing"), "--tier", "photo"],
                        capture_output=True, text=True)
     assert r.returncode != 0 and "photo" in (r.stderr + r.stdout)
+
+
+def test_photo_damage_measured_per_room_before_stitching(tmp_path):
+    from tests.test_damage_pipeline import _box_room
+    from tests.test_damage_wiring import _box_capture, fake_detect
+    c, verts, edges, angle = _box_room()
+    cap_dir = _box_capture(tmp_path / "hall_cap", n=8)
+
+    def recon(imgs, fx, out_dir, rid):
+        m, info_ = _fake_reconstruct(imgs, fx, out_dir, rid)
+        if rid == "hall":
+            m["cap_dir"] = cap_dir
+            m["geometry"] = {"s": c, "edges": edges, "verts": verts, "angle": angle}
+        return m, info_
+
+    plan = run_photos(_photo_set(tmp_path / "in"), tmp_path / "out", reconstruct=recon, damage=True,
+                      detect=fake_detect)
+    validate(plan)
+    assert plan["damage"] and all(d["room_id"] == "hall" for d in plan["damage"])
+    assert all(isinstance(d["single_view"], bool) for d in plan["damage"])
+    assert plan["scope_items"]

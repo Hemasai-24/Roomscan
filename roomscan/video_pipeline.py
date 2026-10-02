@@ -39,6 +39,7 @@ def _segment_capture(cap_dir, merged, keep, imgs, metric_model, bias):
     depth = [merged["depth"][k] for k in keep]
     conf = [merged["conf"][k] for k in keep]
     K = np.median(merged["K"][keep], axis=0)
+    frames_rgb = imgs[merged["idx"][keep]]
     sub = list(range(0, len(keep), SCALE_EVERY))
     scale, spread = scale_from_depths([depth[k] for k in sub], metric_model.predict(imgs[merged["idx"][keep]][sub]),
                                       [conf[k] for k in sub], bias)
@@ -47,13 +48,13 @@ def _segment_capture(cap_dir, merged, keep, imgs, metric_model, bias):
     depth = [d * scale for d in depth]
     T = level(T, estimate_up(T))
     confs = _confidence_maps(conf)
-    write_capture(cap_dir, depth, confs, T, K, fps=FRAMES_PER_SEC)
+    write_capture(cap_dir, depth, confs, T, K, fps=FRAMES_PER_SEC, images=frames_rgb)
     pts = fuse_points(load_stray(cap_dir), stride=1)
     nrm = estimate_normals(pts)
     up = refine_up(pts, nrm, np.array([0.0, 1.0, 0.0]))
     if np.degrees(np.arccos(np.clip(up[1], -1, 1))) > 0.3:
         T = level(T, up)
-        write_capture(cap_dir, depth, confs, T, K, fps=FRAMES_PER_SEC)
+        write_capture(cap_dir, depth, confs, T, K, fps=FRAMES_PER_SEC, images=frames_rgb)
         pts = fuse_points(load_stray(cap_dir), stride=1)
         nrm = estimate_normals(pts)
     floor_spread = classify_planes(extract_planes(pts, nrm))["floor_spread"]
@@ -88,9 +89,10 @@ def video_to_capture(video, out_dir, rotate=0, root=Path(__file__).resolve().par
     return cap_dir, info, warnings
 
 
-def run_video(video, out_dir, rotate=0):
+def run_video(video, out_dir, rotate=0, damage=False, detect=None):
     cap_dir, info, warnings = video_to_capture(video, out_dir, rotate=rotate)
-    plan = run_lidar(cap_dir, tier="video", stride=1, capture_id=Path(video).stem, walkable_path=True)
+    plan = run_lidar(cap_dir, tier="video", stride=1, capture_id=Path(video).stem, walkable_path=True,
+                     damage=damage, detect=detect)
     plan["meta"]["video"] = info
     plan["warnings"] = warnings + plan["warnings"]
     return plan

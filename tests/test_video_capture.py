@@ -59,3 +59,15 @@ def test_write_capture_round_trips_through_stray_loader(tmp_path):
         np.testing.assert_allclose(f.T_wc, T, atol=1e-6)
         np.testing.assert_allclose(f.K, K, rtol=1e-4)
     np.testing.assert_allclose(cap.load_depth(2), 2.0, atol=0.001)
+
+
+def test_write_capture_keeps_colour_frames_when_given(tmp_path):
+    import cv2
+    cams = _upright_cams(n=2)
+    K = np.array([[370.0, 0, 196], [0, 370.0, 259], [0, 0, 1]])
+    depths = [np.full((518, 392), 1.0, np.float32) for _ in range(2)]
+    confs = [np.full((518, 392), 2, np.uint8) for _ in range(2)]
+    imgs = [np.full((518, 392, 3), (10 * i, 100, 200), np.uint8) for i in range(2)]
+    root = write_capture(tmp_path / "cap", depths, confs, cams, K, images=imgs)
+    got = cv2.cvtColor(cv2.imread(str(root / "rgb" / "000001.jpg")), cv2.COLOR_BGR2RGB)
+    assert got.shape == (518, 392, 3) and abs(int(got[0, 0, 2]) - 200) < 5

@@ -4,6 +4,32 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+matplotlib.rcParams["svg.fonttype"] = "none"      # keep labels as searchable text in the SVG
+DAMAGE_COLOR = "#d7191c"
+
+
+def _draw_damage(ax, plan, centres):
+    rooms = {r["id"]: r for r in plan["rooms"]}
+    for d in plan.get("damage", []):
+        room = rooms.get(d["room_id"])
+        if room is None:
+            continue
+        wall = next((w for w in room["walls"] if w["id"] == d["surface_id"]), None)
+        if wall is not None and "offset_along_wall" in d:
+            a, b = np.array(wall["start"], float), np.array(wall["end"], float)
+            p = a + (b - a) / max(np.linalg.norm(b - a), 1e-9) * d["offset_along_wall"]
+        else:                                   # floor / ceiling damage: at the room centre
+            p = centres[room["id"]] + np.array([0.0, 0.35])
+        ax.plot(*p, marker="X", ms=11, color=DAMAGE_COLOR, zorder=5)
+        ax.text(p[0], p[1] - 0.15, f"{d['id']} {d['class']} {d['area']['value']:.2f} m²", color=DAMAGE_COLOR,
+                fontsize=7, ha="center", zorder=5)
+    flags = plan.get("concealed_damage_flags", [])
+    if flags:
+        lines = [f"{f['rule_id']} ({f['severity']}): {f['description']}  [{', '.join(f['damage_ids'])}]"
+                 for f in flags]
+        ax.figure.text(0.02, 0.01, "Concealed-damage flags:\n" + "\n".join(lines), fontsize=8,
+                       color=DAMAGE_COLOR, va="bottom")
+
 
 def _fmt(m):
     return f"{m['value']:.2f} m (±{(m['hi'] - m['lo']) / 2 * 100:.0f} cm)"
@@ -48,6 +74,7 @@ def render(plan, out_stem):
         a, b = centres.get(link["room_a"]), centres.get(link["room_b"])
         if a is not None and b is not None:
             ax.plot([a[0], b[0]], [a[1], b[1]], ls="--", color="#999", lw=1, zorder=3)
+    _draw_damage(ax, plan, centres)
     setup_axes(ax)
     ax.set_title(f"{plan['capture']['id']} · tier: {plan['capture']['tier']}")
     for ext in ("svg", "png"):
