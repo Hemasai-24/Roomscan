@@ -37,3 +37,23 @@ brief, why, and what that does to the reported numbers. Kept up to date as work 
   explicit glass/mirror detection is not done yet, so a glass shower door can show as a door.
 - **Manhattan (right-angle) room footprints.** Wall outlines are snapped to two perpendicular
   directions. Rooms with angled walls will be squared off.
+
+## Plan 2 results (LiDAR tier, sample data, 2026-10-03)
+| Check | Result | Gate |
+|---|---|---|
+| Rooms found (single_room / floor-only / with-ceiling) | 2 / 10 / 8 | - |
+| Runtime per capture (drift off) | 17 s / 34 s / 53 s | - |
+| Drift on vs off, wall thickness (lower = sharper) | with-ceiling 58.9 -> 56.6 mm; floor-only 52.8 -> 54.8 mm; single_room 43.7 -> 37.6 mm | must show an ablation |
+| Drift correction size | up to 2.9-4.2 deg / 12-23 cm on the whole-floor scans, 9-14 chunks rejected by the trust limit | - |
+| Repeatability (floor-only vs with-ceiling, drift off) | 14 walls paired, 0 within 1 cm / 0.5% | fail |
+
+What this means, honestly:
+- **Drift correction is implemented and switchable** (`--drift-correction on|off`, default off) and the
+  ablation script exists (`scripts/drift_ablation.py`). On synthetic data with injected drift it makes
+  doubled walls ~2.6x sharper. On the real scans the effect is within noise: our sharpness measure
+  (~40-60 mm on real data vs ~11 mm synthetic) is dominated by furniture near walls, so it cannot yet
+  show whether real drift was removed. Default is off because on the short single_room scan it moved
+  cameras 6.6 cm and split a room differently.
+- **Repeatability fails.** The two whole-floor scans are split into rooms differently and room outlines
+  still have many short steps, so wall pieces do not correspond one-to-one.
+- A ceiling of 6.14 m appears in one room with drift on (likely the stair void / an upper-floor plane).
