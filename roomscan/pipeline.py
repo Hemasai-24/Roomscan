@@ -36,8 +36,8 @@ def detect_tier(path):
         vids = sorted(p for p in path.iterdir() if p.suffix.lower() in VIDEO_EXT)
         if len(vids) == 1:
             return "video", vids[0]
-    raise SystemExit(f"{path}: no capture found (expected a Stray Scanner folder or one video file; "
-                     f"photo folders: photo tier)")
+    raise SystemExit(f"{path}: no capture found (expected a Stray Scanner folder, one video file, "
+                     f"or a folder holding one subfolder of photos per room)")
 
 
 def check_video_length(video):

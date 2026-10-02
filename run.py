@@ -1,4 +1,5 @@
-"""One command per capture: python run.py <Stray folder | video file> [--out DIR] [--tier auto|lidar|video]"""
+"""One command per capture: python run.py <Stray folder | video file | folder of per-room photo folders>
+[--out DIR] [--tier auto|lidar|video|photo]"""
 import argparse
 import json
 from pathlib import Path
@@ -14,11 +15,13 @@ def main():
     ap.add_argument("--out", type=Path)
     ap.add_argument("--drift-correction", choices=["on", "off"], default="off",
                     help="re-align the walk so walls seen twice coincide (default off: see docs/TRADEOFFS.md)")
-    ap.add_argument("--tier", choices=["auto", "lidar", "video"], default="auto")
+    ap.add_argument("--tier", choices=["auto", "lidar", "video", "photo"], default="auto")
     ap.add_argument("--rotate", type=int, choices=[0, 90, 180, 270], default=0,
                     help="video only: clockwise turn to make frames upright (Stray Scanner rgb.mp4 needs 90)")
     a = ap.parse_args()
     tier, path = detect_tier(a.capture_dir)
+    if a.tier == "photo" and tier != "photo":
+        raise SystemExit(f"{a.capture_dir}: --tier photo needs a folder with one subfolder of photos per room")
     if a.tier == "video" and tier == "lidar":
         tier, path = "video", path / "rgb.mp4"          # use only the colour video of a Stray capture
     out = a.out or Path("outputs") / (path.stem if tier == "video" else path.name)
@@ -26,6 +29,9 @@ def main():
     if tier == "video":
         from roomscan.video_pipeline import run_video
         plan = run_video(path, out, rotate=a.rotate)
+    elif tier == "photo":
+        from roomscan.photo_pipeline import run_photos
+        plan = run_photos(path, out)
     else:
         plan = run_lidar(path, drift_correction=(a.drift_correction == "on"))
     validate(plan)
