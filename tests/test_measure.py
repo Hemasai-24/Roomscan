@@ -37,3 +37,17 @@ def test_missing_ceiling_is_honest():
     ch = r["ceiling_height"]
     assert ch["hi"] - ch["lo"] >= 0.3
     assert any("ceiling" in w for w in r["warnings"])
+
+
+def test_unseen_ceiling_interval_respects_lower_bound():
+    r = _room(ceiling=False)          # walls observed up to 2.6 m
+    ch = r["ceiling_height"]
+    assert ch["lo"] >= 2.6 - 0.02     # never below the highest observed wall point
+    assert ch["hi"] >= 2.6 + 0.3
+
+
+def test_perimeter_interval_accounts_for_shared_offsets():
+    r = _room()
+    half = (r["perimeter"]["hi"] - r["perimeter"]["lo"]) / 2
+    # rectangle: each offset moves the perimeter by 2x -> sigma_P = 2 * sigma * sqrt(n) = 4 sigma
+    assert half >= 1.96 * 4 * 0.008 * 0.999

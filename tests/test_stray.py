@@ -39,3 +39,10 @@ def test_sample_single_room():
     cap = load_stray(SINGLE_ROOM)
     assert len(cap.frames) == 1715
     assert cap.depth_size == (256, 192)
+
+
+def test_missing_confidence_treated_as_confident(stray_factory):
+    import shutil
+    root = stray_factory(lambda i: np.full((192, 256), 1.5), [IDENT])
+    shutil.rmtree(root / "confidence")
+    np.testing.assert_allclose(load_stray(root).load_depth(0), 1.5)

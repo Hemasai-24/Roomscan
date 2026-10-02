@@ -25,7 +25,8 @@ class StrayCapture:
         d = cv2.imread(str(self.root / "depth" / f"{index:06d}.png"), cv2.IMREAD_UNCHANGED)
         c = cv2.imread(str(self.root / "confidence" / f"{index:06d}.png"), cv2.IMREAD_UNCHANGED)
         out = d.astype(np.float32) / 1000.0
-        out[c < min_conf] = 0.0
+        if c is not None:          # older exports / partial copies may lack confidence maps
+            out[c < min_conf] = 0.0
         return out
 
 

@@ -5,6 +5,11 @@ import numpy as np
 
 UP = np.array([0.0, 1.0, 0.0])
 MIN_CEILING_ABOVE_FLOOR = 1.9
+FLOOR_MERGE = 0.05    # horizontal planes this close to the floor are the same floor (drift / tilt)
+
+
+class CaptureError(ValueError):
+    """The capture lacks what a floor plan needs (no floor, no walls); message is user-facing."""
 
 
 @dataclass
@@ -72,13 +77,26 @@ def classify_planes(planes):
     walls = [p for p in planes if abs(p.normal @ UP) < 0.1]
     for w in walls:
         w.kind = "wall"
+    if not horiz:
+        raise CaptureError("no floor found: keep the floor in view while scanning")
+    if not walls:
+        raise CaptureError("no walls found: point the phone at the walls while scanning")
     big = max(len(p.inliers) for p in horiz)
-    floor = min((p for p in horiz if len(p.inliers) >= 0.2 * big), key=lambda p: p.height)
-    floor.kind = "floor"
+    floor0 = min((p for p in horiz if len(p.inliers) >= 0.2 * big), key=lambda p: p.height)
+    parts = [p for p in horiz if abs(p.height - floor0.height) < FLOOR_MERGE]
+    w = np.array([len(p.inliers) for p in parts], float)
+    hs = np.array([p.height for p in parts])
+    between = float(np.sqrt(np.sum(w * (hs - np.average(hs, weights=w)) ** 2) / w.sum()))
+    pts = np.concatenate([p.inliers for p in parts])
+    n, d, rms = _refit(pts)
+    spread = max(between, float(np.std(pts[:, 1])))   # gravity-aligned height scatter; a tilted fit would hide a step
+    floor = Plane(n, d, pts, rms, "floor")
+    for p in parts:
+        p.kind = "merged"
     cands = [p for p in horiz if p.height > floor.height + MIN_CEILING_ABOVE_FLOOR
              and len(p.inliers) >= 0.2 * big]
     ceiling = max(cands, key=lambda p: len(p.inliers)) if cands else None
     if ceiling is not None:
         ceiling.kind = "ceiling"
     other = [p for p in planes if p.kind == "other"]
-    return {"floor": floor, "ceiling": ceiling, "walls": walls, "other": other}
+    return {"floor": floor, "ceiling": ceiling, "walls": walls, "other": other, "floor_spread": spread}

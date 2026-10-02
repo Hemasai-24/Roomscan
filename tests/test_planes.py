@@ -26,3 +26,21 @@ def test_deterministic():
     a = extract_planes(p)
     b = extract_planes(p)
     assert [round(x.d, 6) for x in a] == [round(x.d, 6) for x in b]
+
+
+def test_near_coplanar_floor_slabs_merge():
+    p = room_points([(0, 0), (4, 0), (4, 3), (0, 3)], 2.6)
+    p[(p[:, 1] < 0.02) & (p[:, 0] > 2.0), 1] += 0.03     # half the floor 3 cm higher (drift/tilt)
+    c = classify_planes(extract_planes(p))
+    n_floor = int(((p[:, 1] < 0.05) & (p[:, 0] > 0.05) & (p[:, 0] < 3.95)).sum())
+    assert len(c["floor"].inliers) >= 0.9 * n_floor
+    assert c["floor_spread"] >= 0.01
+
+
+def test_no_floor_raises_capture_error():
+    import pytest
+    from fpp.geometry.planes import CaptureError
+    walls_only = room_points([(0, 0), (4, 0), (4, 3), (0, 3)], 2.6, ceiling=False)
+    walls_only = walls_only[walls_only[:, 1] > 0.3]
+    with pytest.raises(CaptureError):
+        classify_planes(extract_planes(walls_only))

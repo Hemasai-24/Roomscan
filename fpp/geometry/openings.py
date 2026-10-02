@@ -69,16 +69,19 @@ def find_openings(rays, edges, angle, floor_h, wall_h, cell=0.02):
             np.add.at(grids[i], ((h[ok] / cell).astype(int), (s[ok] / cell).astype(int)), 1)
     out = []
     for i, g in enumerate(grids):
+        L = abs(edges[i].end - edges[i].start)
+        if edges[i].support == 0:      # no fitted wall: scan boundary, not a wall with a hole
+            continue
         free = (g >= MIN_HITS).astype(np.uint8)
         free = cv2.morphologyEx(free, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
         n, lab, stats, _ = cv2.connectedComponentsWithStats(free, connectivity=4)
         for j in range(1, n):
             x, yv, w, hgt, _ = stats[j]
             width, height = w * cell, hgt * cell
-            if width < MIN_WIDTH or height < MIN_HEIGHT or height > wall_h - 0.05:
+            if width < MIN_WIDTH or height < MIN_HEIGHT or height > wall_h - 0.05 or width > L - 0.05:
                 continue
             bottom = yv * cell
             kind = "door" if bottom < DOOR_BOTTOM else "window"
-            out.append(Opening(i, kind, x * cell, (x + w) * cell, bottom, bottom + height,
+            out.append(Opening(i, kind, x * cell, min((x + w) * cell, L), bottom, bottom + height,
                                int(g[lab == j].sum())))
     return out

@@ -35,3 +35,23 @@ def test_edges_connect_consecutive_vertices():
         k, j = (0, 1) if e.axis == "u" else (1, 0)
         assert abs(a[k] - e.offset) < 1e-9 and abs(b[k] - e.offset) < 1e-9
         assert abs(a[j] - e.start) < 1e-9 and abs(b[j] - e.end) < 1e-9
+
+
+def test_small_jog_gives_no_zero_length_walls():
+    fp = [(0, 0), (4, 0), (4, 1.5), (4.1, 1.5), (4.1, 3), (0, 3)]
+    p = room_points(fp, 2.5)
+    poly, edges, _ = footprint(classify_planes(extract_planes(p, min_inliers=800)))
+    assert min(abs(e.end - e.start) for e in edges) >= 0.05
+
+
+def test_non_manhattan_room_does_not_crash():
+    p = room_points([(0, 0), (4, 0), (0, 3)], 2.5)
+    poly, edges, _ = footprint(classify_planes(extract_planes(p, min_inliers=800)))
+    assert len(poly) >= 4
+
+
+def test_parallel_walls_12cm_apart_keep_both():
+    fp = [(0, 0), (4, 0), (4, 1.5), (4.12, 1.5), (4.12, 3), (0, 3)]
+    p = room_points(fp, 2.5)
+    poly, edges, _ = footprint(classify_planes(extract_planes(p, min_inliers=800)))
+    assert min(abs(e.end - e.start) for e in edges) >= 0.05
