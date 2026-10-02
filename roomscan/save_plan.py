@@ -7,10 +7,10 @@ import jsonschema
 SCHEMA = json.loads((Path(__file__).resolve().parents[1] / "schema" / "plan.schema.json").read_text())
 
 
-def build_plan(capture_id, tier, rooms, meta):
+def build_plan(capture_id, tier, rooms, meta, adjacency=()):
     warnings = [f"{r['id']}: {w}" for r in rooms for w in r.get("warnings", [])]
     return {"schema_version": "1.0", "capture": {"id": capture_id, "tier": tier},
-            "rooms": rooms, "adjacency": [], "damage": [], "concealed_damage_flags": [],
+            "rooms": rooms, "adjacency": list(adjacency), "damage": [], "concealed_damage_flags": [],
             "scope_items": [], "warnings": warnings, "meta": meta}
 
 

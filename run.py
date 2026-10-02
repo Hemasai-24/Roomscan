@@ -5,7 +5,7 @@ from pathlib import Path
 
 from roomscan.load_capture import is_stray
 from roomscan.save_plan import validate
-from roomscan.pipeline import run_lidar_single
+from roomscan.pipeline import run_lidar
 from roomscan.draw_plan import render
 
 
@@ -18,7 +18,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     if not is_stray(a.capture_dir):
         raise SystemExit(f"{a.capture_dir}: not a Stray Scanner capture (video/photo tiers: Plans 3-4)")
-    plan = run_lidar_single(a.capture_dir)
+    plan = run_lidar(a.capture_dir)
     validate(plan)
     (out / "plan.json").write_text(json.dumps(plan, indent=2))
     render(plan, out / "plan")

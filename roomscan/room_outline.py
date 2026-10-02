@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 SNAP_DIST = 0.15
+MASK_SNAP_DIST = 0.25   # room-mask edges stop short of the wall face (walls dilated out of the floor)
 
 
 @dataclass
@@ -75,13 +76,13 @@ def _rectilinear(contour, eps):
     return segs
 
 
-def _snap(segs, lines):
+def _snap(segs, lines, snap_dist=SNAP_DIST):
     """Snap each segment to the nearest collinear wall plane whose extent overlaps it."""
     out = []
     n = len(segs)
     for i, (axis, off) in enumerate(segs):
         a, b = sorted((segs[i - 1][1], segs[(i + 1) % n][1]))   # segment extent along its line
-        cands = [l for l in lines if l[0] == axis and abs(l[1] - off) < SNAP_DIST
+        cands = [l for l in lines if l[0] == axis and abs(l[1] - off) < snap_dist
                  and min(b, l[3]) - max(a, l[2]) > 0.1 * (b - a)]
         if cands:
             best = min(cands, key=lambda l: (round(abs(l[1] - off), 2), -l[4]))
@@ -107,6 +108,46 @@ def _drop_degenerate(segs, min_len=0.05):
     return segs
 
 
+def _assemble(snapped):
+    """Corners from consecutive (axis, offset) lines; edge i runs from vertex i-1 to vertex i; CCW."""
+    n = len(snapped)
+    verts = []
+    for i in range(n):
+        a, b = snapped[i], snapped[(i + 1) % n]
+        verts.append((a[1], b[1]) if a[0] == "u" else (b[1], a[1]))
+    verts = np.array(verts)
+    edges = []
+    for i in range(n):
+        p0, p1 = verts[i - 1], verts[i]
+        axis, off, sup, rms = snapped[i]
+        k_ = 1 if axis == "u" else 0
+        edges.append(Edge(axis, off, float(p0[k_]), float(p1[k_]), sup, rms))
+    area2 = np.sum(verts[:, 0] * np.roll(verts[:, 1], -1) - np.roll(verts[:, 0], -1) * verts[:, 1])
+    if area2 < 0:
+        # reversed vertex j == original vertex n-1-j, so reversed edge j == original edge (n-j) % n, flipped
+        verts = verts[::-1]
+        edges = [Edge(e.axis, e.offset, e.end, e.start, e.support, e.rms)
+                 for e in (edges[(n - j) % n] for j in range(n))]
+    return verts, edges
+
+
+def outline_from_mask(mask, grid, walls, angle):
+    """Rectilinear outline of one room's floor mask, edges snapped to nearby fitted walls."""
+    img = mask.astype(np.uint8) * 255
+    cnts, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cnt = max(cnts, key=cv2.contourArea)
+    segs = [(ax, o * grid.cell + grid.lo[0 if ax == "u" else 1] + grid.cell / 2)
+            for ax, o in _rectilinear(cnt, eps=0.08 / grid.cell)]
+    segs = _drop_degenerate(segs)
+    if len(segs) < 4:
+        ys, xs = np.nonzero(mask)
+        u0, v0 = grid.lo + np.array([xs.min(), ys.min()]) * grid.cell
+        u1, v1 = grid.lo + np.array([xs.max() + 1, ys.max() + 1]) * grid.cell
+        segs = [("v", v0), ("u", u1), ("v", v1), ("u", u0)]
+    snapped = _drop_degenerate(_snap(segs, _wall_lines(walls, angle), snap_dist=MASK_SNAP_DIST))
+    return _assemble(snapped)
+
+
 def footprint(classes, cell: float = 0.02):
     floor, walls = classes["floor"], classes["walls"]
     angle = manhattan_angle(walls)
@@ -127,22 +168,5 @@ def footprint(classes, cell: float = 0.02):
         mn, mx = q.min(0), q.max(0)
         segs = [("v", mn[1]), ("u", mx[0]), ("v", mx[1]), ("u", mn[0])]
     snapped = _drop_degenerate(_snap(segs, _wall_lines(walls, angle)))
-    n = len(snapped)
-    verts = []
-    for i in range(n):
-        a, b = snapped[i], snapped[(i + 1) % n]
-        verts.append((a[1], b[1]) if a[0] == "u" else (b[1], a[1]))
-    verts = np.array(verts)
-    edges = []
-    for i in range(n):
-        p0, p1 = verts[i - 1], verts[i]
-        axis, off, sup, rms = snapped[i]
-        k_ = 1 if axis == "u" else 0
-        edges.append(Edge(axis, off, float(p0[k_]), float(p1[k_]), sup, rms))
-    area2 = np.sum(verts[:, 0] * np.roll(verts[:, 1], -1) - np.roll(verts[:, 0], -1) * verts[:, 1])
-    if area2 < 0:
-        # reversed vertex j == original vertex n-1-j, so reversed edge j == original edge (n-j) % n, flipped
-        verts = verts[::-1]
-        edges = [Edge(e.axis, e.offset, e.end, e.start, e.support, e.rms)
-                 for e in (edges[(n - j) % n] for j in range(n))]
+    verts, edges = _assemble(snapped)
     return verts, edges, angle

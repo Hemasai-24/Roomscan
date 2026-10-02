@@ -17,7 +17,8 @@ def setup_axes(ax):
 
 
 def render(plan, out_stem):
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=(12, 12))
+    centres = {}
     for room in plan["rooms"]:
         poly = np.array(room["polygon"] + [room["polygon"][0]])
         ax.fill(poly[:, 0], poly[:, 1], color="#f3efe6", zorder=0)
@@ -40,8 +41,13 @@ def render(plan, out_stem):
             ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color="#2b8cbe" if o["type"] == "window" else "#e6550d",
                     lw=6, zorder=2)
         c = poly[:-1].mean(0)
-        ax.text(*c, f"{room['name']}\n{room['floor_area']['value']:.2f} m²\n"
+        centres[room["id"]] = c
+        ax.text(*c, f"{room['id']}\n{room['floor_area']['value']:.2f} m²\n"
                     f"ceiling {room['ceiling_height']['value']:.2f} m", ha="center", fontsize=10)
+    for link in plan.get("adjacency", []):
+        a, b = centres.get(link["room_a"]), centres.get(link["room_b"])
+        if a is not None and b is not None:
+            ax.plot([a[0], b[0]], [a[1], b[1]], ls="--", color="#999", lw=1, zorder=3)
     setup_axes(ax)
     ax.set_title(f"{plan['capture']['id']} · tier: {plan['capture']['tier']}")
     for ext in ("svg", "png"):
