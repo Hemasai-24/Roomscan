@@ -30,3 +30,13 @@ def room_points(footprint, height, step=0.02, ceiling=True, noise=0.003, seed=0)
 def table_points(x0, z0, x1, z1, top=0.9, step=0.02):
     xs, zs = _grid(x0, x1, z0, z1, step)
     return np.c_[xs.ravel(), np.full(xs.size, top), zs.ravel()]
+
+
+def two_rooms_with_door(door=(1.0, 1.9), door_h=2.05, h=2.5, step=0.02):
+    """Room A x in [0,4], room B x in [4,7]; both z in [0,3]. Shared wall x=4 has a door at z in `door`."""
+    a = room_points([(0, 0), (4, 0), (4, 3), (0, 3)], h, step=step)
+    b = room_points([(4, 0), (7, 0), (7, 3), (4, 3)], h, step=step, seed=1)
+    p = np.concatenate([a, b])
+    hole = (np.abs(p[:, 0] - 4) < 0.03) & (p[:, 2] > door[0]) & (p[:, 2] < door[1]) & (p[:, 1] < door_h) \
+        & (p[:, 1] > 0.02)
+    return p[~hole]

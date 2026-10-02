@@ -17,6 +17,24 @@ class Edge:
     rms: float
 
 
+@dataclass
+class Grid:
+    """Top-down raster in plan coordinates: cell (col, row) = floor((q - lo) / cell)."""
+    lo: np.ndarray
+    cell: float
+    shape: tuple
+
+    def cells(self, q):
+        return ((q - self.lo) / self.cell).astype(int)
+
+    def raster(self, q):
+        ij = self.cells(q)
+        ok = (ij[:, 0] >= 0) & (ij[:, 1] >= 0) & (ij[:, 0] < self.shape[1]) & (ij[:, 1] < self.shape[0])
+        m = np.zeros(self.shape, np.uint8)
+        m[ij[ok, 1], ij[ok, 0]] = 1
+        return m
+
+
 def manhattan_angle(walls):
     ang = np.array([np.arctan2(w.normal[2], w.normal[0]) for w in walls])
     wts = np.array([len(w.inliers) for w in walls], float)
