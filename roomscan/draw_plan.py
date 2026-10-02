@@ -9,6 +9,13 @@ def _fmt(m):
     return f"{m['value']:.2f} m (±{(m['hi'] - m['lo']) / 2 * 100:.0f} cm)"
 
 
+def setup_axes(ax):
+    """Top-down view: looking down from +Y, plan v (world z, rotated) points DOWN the page."""
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.invert_yaxis()
+
+
 def render(plan, out_stem):
     fig, ax = plt.subplots(figsize=(10, 10))
     for room in plan["rooms"]:
@@ -35,8 +42,7 @@ def render(plan, out_stem):
         c = poly[:-1].mean(0)
         ax.text(*c, f"{room['name']}\n{room['floor_area']['value']:.2f} m²\n"
                     f"ceiling {room['ceiling_height']['value']:.2f} m", ha="center", fontsize=10)
-    ax.set_aspect("equal")
-    ax.axis("off")
+    setup_axes(ax)
     ax.set_title(f"{plan['capture']['id']} · tier: {plan['capture']['tier']}")
     for ext in ("svg", "png"):
         fig.savefig(f"{out_stem}.{ext}", dpi=150, bbox_inches="tight")
