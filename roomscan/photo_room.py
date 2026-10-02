@@ -23,6 +23,7 @@ CAMERA_HEIGHT_PRIOR = 1.4      # metres above floor
 MAX_DEPTH = 6.0                # photos look across rooms
 MIN_INLIERS = 800
 FALLBACK_REL = 0.5             # +-50 % ranges when only a box around the points is known
+MAX_PHOTO_CEILING = 3.5        # a higher "ceiling" from a few photos is almost always a mis-fit plane
 
 
 def _confidence_maps(conf):
@@ -136,6 +137,10 @@ def measure_photo_room(cap_dir, room_id, tier="photo"):
             raise CaptureError("cameras are not inside any recovered floor region")
         mask = np.logical_or.reduce(hit)
         s = surfaces_for_room(classes, mask, grid, angle)
+        if s["ceiling"] is not None and s["ceiling"].height - s["floor"].height > MAX_PHOTO_CEILING:
+            warnings.append(f"ceiling reading {s['ceiling'].height - s['floor'].height:.2f} m is implausible "
+                            f"for a few photos (> {MAX_PHOTO_CEILING} m): reported as not observed")
+            s["ceiling"] = None
         verts, edges = outline_from_mask(mask, grid, s["walls"], angle)
         wall_h = (s["ceiling"].height if s["ceiling"] else s["floor"].height + 2.6) - s["floor"].height
         ops = find_openings(capture_rays(cap, stride=1, max_depth=MAX_DEPTH), edges, angle, s["floor"].height,

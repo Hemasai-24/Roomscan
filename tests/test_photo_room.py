@@ -92,6 +92,15 @@ def test_one_room_measured_from_its_photos(tmp_path):
     assert out["cameras_plan"].shape == (6, 2)
 
 
+def test_implausibly_high_ceiling_reported_as_not_observed(tmp_path, monkeypatch):
+    import tests.test_photo_room as me
+    monkeypatch.setattr(me, "HI", np.array([5.0, 2.6, 4.0]))       # "ceiling" 4.0 m above the floor
+    cap_dir, _ = _capture(tmp_path)
+    out = measure_photo_room(cap_dir, "r")
+    assert out["room"]["ceiling_observed"] is False
+    assert any("ceiling" in w and "implausible" in w for w in out["warnings"])
+
+
 def test_no_floor_in_view_uses_camera_height_prior(tmp_path):
     cap_dir, _ = _capture(tmp_path, cut_floor=True)
     out = measure_photo_room(cap_dir, "r")
