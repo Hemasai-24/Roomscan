@@ -6,13 +6,28 @@ crosses a corner splits into one record per surface. The same damage seen in sev
 (same class, same surface, centres within 30 cm) is merged."""
 import cv2
 import numpy as np
+import shapely
+from shapely.geometry import Polygon
 
 from roomscan.measurements import TIER_REL, Z95
+from roomscan.room_outline import to_plan
 
 ON_SURFACE = 0.05     # m
 MIN_PIXELS = 20
 MERGE_DIST = 0.30     # m
 UP = np.array([0.0, 1.0, 0.0])
+EXTENT_MARGIN = 0.10  # m beyond a wall's ends / a room's outline still counts as on that surface
+
+
+def _inside_extent(pts, ext):
+    """Optional surface extent: walls {"angle", "axis", "lo", "hi"} (along-wall range in plan coords),
+    floors/ceilings {"angle", "polygon"} (room outline in plan coords)."""
+    q = to_plan(pts, ext["angle"])
+    if "polygon" in ext:
+        poly = Polygon(ext["polygon"]).buffer(EXTENT_MARGIN)
+        return shapely.contains_xy(poly, q[:, 0], q[:, 1])
+    along = q[:, 1] if ext["axis"] == "u" else q[:, 0]
+    return (along >= ext["lo"] - EXTENT_MARGIN) & (along <= ext["hi"] + EXTENT_MARGIN)
 
 
 def _basis(normal, kind):
@@ -75,6 +90,9 @@ def _per_view(view, surfaces, tier):
         if len(pts) < MIN_PIXELS:
             continue
         dist = np.abs(pts @ planes.T + ds)
+        for k, srf in enumerate(surfaces):
+            if "extent" in srf:
+                dist[~_inside_extent(pts, srf["extent"]), k] = np.inf
         best = dist.argmin(1)
         ok = dist[np.arange(len(pts)), best] < ON_SURFACE
         for k in np.unique(best[ok]):
