@@ -1,0 +1,28 @@
+{
+  "depth_anything_v2_metric_indoor_large": {
+    "bias": 1.4082,
+    "per_capture": {
+      "single_room": {
+        "ratio": 1.4082,
+        "per_frame_std": 0.1151,
+        "frames": 19
+      },
+      "single_scan_floor_only": {
+        "ratio": 1.405,
+        "per_frame_std": 0.152,
+        "frames": 58
+      },
+      "single_scan_with_ceiling": {
+        "ratio": 1.4592,
+        "per_frame_std": 0.3576,
+        "frames": 108
+      }
+    },
+    "leave_one_out_error": {
+      "single_room": -0.0167,
+      "single_scan_floor_only": -0.02,
+      "single_scan_with_ceiling": 0.0374
+    },
+    "note": "Depth Anything V2 Metric-Indoor-Large vs Stray Scanner LiDAR, upright 392x518 frames"
+  }
+}
