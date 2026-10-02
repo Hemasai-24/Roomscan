@@ -19,8 +19,11 @@ DETECT_WIDTH = 1280          # px; thin cracks need the detail (Stray video is 1
 NEAR_OPENING = 0.20          # m between damage edge and an opening side
 MIN_VIEWS = {"lidar": 2, "video": 2, "photo": 1}
 ALL = {"water_stain", "crack", "mold", "peeling_paint", "hole"}
-# Sample-flat review: floor tile grout reads as "crack", ceiling lights/vents as "hole".
-ALLOWED = {"wall": ALL, "ceiling": ALL - {"hole"}, "floor": ALL - {"crack", "peeling_paint"}}
+# From the false-alarm review on the (undamaged) sample flat: ceiling lights/vents read as "hole"; shiny floor
+# tiles (reflections, grout) read as stains, cracks and holes, so floors keep only mould; the skirting-board
+# joint at the wall base reads as "crack"/"stain", so wall damage lying entirely in that band is dropped.
+ALLOWED = {"wall": ALL, "ceiling": ALL - {"hole"}, "floor": {"mold"}}
+SKIRTING_BAND = 0.12         # m above the floor
 
 
 def wall_plane(edge, angle):
@@ -124,7 +127,10 @@ def _kind(surface_id):
 def filter_damage(damage, tier):
     out = []
     for d in damage:
-        if d["class"] not in ALLOWED[_kind(d["surface_id"])] or d["n_views"] < MIN_VIEWS[tier]:
+        kind = _kind(d["surface_id"])
+        if d["class"] not in ALLOWED[kind] or d["n_views"] < MIN_VIEWS[tier]:
+            continue
+        if kind == "wall" and d["bottom_above_floor"]["value"] + d["height"]["value"] < SKIRTING_BAND:
             continue
         d = dict(d)
         if tier == "photo":

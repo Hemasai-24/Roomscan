@@ -69,6 +69,20 @@ def test_filter_class_per_surface():
         [("crack", "room_0_w1"), ("water_stain", "room_0_ceiling")]
 
 
+def test_filter_drops_skirting_band_and_shiny_floor_damage():
+    M = lambda v: {"value": v, "lo": v - 0.01, "hi": v + 0.01, "unit": "m"}
+    base = _dmg("crack", "room_0_w1")
+    base.update(bottom_above_floor=M(0.02), height=M(0.05))          # skirting-board joint line
+    high = _dmg("crack", "room_0_w2")
+    high.update(bottom_above_floor=M(0.30), height=M(0.05))
+    low_stain = _dmg("water_stain", "room_0_w3")
+    low_stain.update(bottom_above_floor=M(0.02), height=M(0.40))     # rising damp reaches above the band
+    floor = [_dmg(c, "room_0_floor") for c in ("water_stain", "hole", "mold")]
+    kept = filter_damage([base, high, low_stain] + floor, "lidar")
+    assert sorted((d["class"], d["surface_id"]) for d in kept) == \
+        [("crack", "room_0_w2"), ("mold", "room_0_floor"), ("water_stain", "room_0_w3")]
+
+
 def test_annotate_offset_along_wall_and_near_opening():
     room = {"id": "room_0", "walls": [{"id": "room_0_w0", "start": [0.0, 4.0], "end": [5.0, 4.0]}],
             "openings": [{"id": "room_0_o0", "wall_id": "room_0_w0", "type": "door", "offset_along_wall": 1.5,
