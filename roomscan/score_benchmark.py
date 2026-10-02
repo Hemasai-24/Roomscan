@@ -26,21 +26,28 @@ def load_ground_truth(path):
     return gt
 
 
-def match_room_walls(gt_walls, pred_lengths):
+def _match_indices(gt_walls, pred_lengths):
+    """[(ground-truth wall name, predicted wall index)]."""
     names = sorted(gt_walls, key=lambda k: int(k[1:]))
     truth = np.array([gt_walls[k] for k in names])
     pred = np.asarray(pred_lengths, float)
     if len(pred) == len(truth):
+        idx = np.arange(len(pred))
         best = None
-        for seq in (pred, pred[::-1]):
-            for s in range(len(seq)):
-                cand = np.roll(seq, -s)
-                err = np.abs(cand - truth).sum()
+        for order in (idx, idx[::-1]):
+            for s in range(len(order)):
+                cand = np.roll(order, -s)
+                err = np.abs(pred[cand] - truth).sum()
                 if best is None or err < best[0]:
                     best = (err, cand)
         return list(zip(names, best[1].tolist()))
     r, c = linear_sum_assignment(np.abs(truth[:, None] - pred[None]))
-    return [(names[i], float(pred[j])) for i, j in zip(r, c)]
+    return [(names[i], int(j)) for i, j in zip(r, c)]
+
+
+def match_room_walls(gt_walls, pred_lengths):
+    pred = list(pred_lengths)
+    return [(n, float(pred[j])) for n, j in _match_indices(gt_walls, pred)]
 
 
 def _wall_ok(err, truth, tier):
@@ -61,12 +68,9 @@ def score_plan(plan, gt, room_map):
             pred = [w["length"] for w in r["walls"]]
             if len(pred) != len(g["wall"]):
                 count_mismatch.append(name)
-            by_value = {}
-            for m in pred:
-                by_value.setdefault(m["value"], m)
-            for wname, pv in match_room_walls(g["wall"], [m["value"] for m in pred]):
-                t, m = g["wall"][wname], by_value[pv]
-                e = abs(pv - t)
+            for wname, j in _match_indices(g["wall"], [m["value"] for m in pred]):
+                t, m = g["wall"][wname], pred[j]
+                e = abs(m["value"] - t)
                 w_err.append(e)
                 w_cov.append(m["lo"] <= t <= m["hi"])
                 w_ok.append(_wall_ok(e, t, tier))

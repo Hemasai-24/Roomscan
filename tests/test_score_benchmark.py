@@ -46,3 +46,11 @@ def test_missed_and_phantom_openings_count_as_misses():
     s = score_plan(plan([4, 3, 4, 3], doors=(0.80, 0.90)), {"room1": dict(GT["room1"], door_width={})},
                    {"room1": "room_0"})
     assert s["openings"]["phantom"] == 2 and s["gates"]["opening_widths"] is False
+
+
+def test_equal_length_walls_keep_their_own_ranges():
+    p = plan([4.0, 3.0, 4.0, 3.0])
+    p["rooms"][0]["walls"][2]["length"] = M(4.0, 0.001)     # same length, much tighter range, misses truth 4.01
+    gt = {"room1": {"wall": {"W1": 4.01, "W2": 3.0, "W3": 4.01, "W4": 3.0}}}
+    s = score_plan(p, gt, {"room1": "room_0"})
+    assert s["walls"]["coverage"] == 0.75
