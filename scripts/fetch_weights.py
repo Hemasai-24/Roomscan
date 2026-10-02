@@ -15,7 +15,7 @@ THIRD = ROOT / "third_party"
 
 # VGGT (Meta, 2025): camera poses + depth from many images in one forward pass.
 VGGT_REPO = "https://github.com/facebookresearch/vggt.git"
-VGGT_COMMIT = "main"
+VGGT_COMMIT = "a288dd0f14786c93483e45524328726ab7b1b4ce"  # pinned: the commit every reported number used
 VGGT_WEIGHTS = ("facebook/VGGT-1B", "model.pt")
 # Depth Anything V2, metric indoor (metres) - used only to fix VGGT's unknown scale.
 DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Metric-Indoor-Large-hf"
@@ -25,7 +25,8 @@ def main():
     WEIGHTS.mkdir(exist_ok=True)
     THIRD.mkdir(exist_ok=True)
     if not (THIRD / "vggt").exists():
-        subprocess.run(["git", "clone", "-q", "--depth", "1", VGGT_REPO, str(THIRD / "vggt")], check=True)
+        subprocess.run(["git", "clone", "-q", VGGT_REPO, str(THIRD / "vggt")], check=True)
+        subprocess.run(["git", "-C", str(THIRD / "vggt"), "checkout", "-q", VGGT_COMMIT], check=True)
     print(hf_hub_download(*VGGT_WEIGHTS, local_dir=WEIGHTS / "vggt-1b"))
     print(snapshot_download(DEPTH_MODEL, local_dir=WEIGHTS / "da2-metric-indoor-large"))
 
