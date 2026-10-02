@@ -13,8 +13,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("capture_dir", type=Path)
     ap.add_argument("--out", type=Path)
-    ap.add_argument("--drift-correction", choices=["on", "off"], default="on",
-                    help="re-align the walk so walls seen twice coincide (default on)")
+    ap.add_argument("--drift-correction", choices=["on", "off"], default="off",
+                    help="re-align the walk so walls seen twice coincide (default off: see docs/TRADEOFFS.md)")
     a = ap.parse_args()
     out = a.out or Path("outputs") / a.capture_dir.name
     out.mkdir(parents=True, exist_ok=True)
