@@ -51,3 +51,13 @@ def test_perimeter_interval_accounts_for_shared_offsets():
     half = (r["perimeter"]["hi"] - r["perimeter"]["lo"]) / 2
     # rectangle: each offset moves the perimeter by 2x -> sigma_P = 2 * sigma * sqrt(n) = 4 sigma
     assert half >= 1.96 * 4 * 0.008 * 0.999
+
+
+def test_video_ranges_reflect_measured_video_error():
+    """Sample single_room video vs LiDAR: wall errors of 20-100% (docs/plans/plan3-video-tier.md, Task 6).
+    Until re-fitted on tape-measured videos, a 2 m video wall must carry a 95% range of at least +-40%."""
+    from roomscan.measurements import interval, TIER_REL, TIER_SIGMA_FLOOR
+    L = 2.0
+    sig = np.sqrt(2 * TIER_SIGMA_FLOOR["video"] ** 2 + (TIER_REL["video"] * L) ** 2)
+    m = interval(L, sig)
+    assert (m.hi - m.lo) / 2 >= 0.4 * L

@@ -5,8 +5,10 @@ import numpy as np
 from shapely.geometry import Polygon
 
 Z95 = 1.96
-TIER_SIGMA_FLOOR = {"lidar": 0.008, "video": 0.03, "photo": 0.08}
-TIER_REL = {"lidar": 0.0, "video": 0.015, "photo": 0.04}   # relative scale uncertainty
+TIER_SIGMA_FLOOR = {"lidar": 0.008, "video": 0.05, "photo": 0.08}
+# relative uncertainty. video: provisional, from sample single_room video vs LiDAR (walls off by 20-100%,
+# pose segments broken by a bathroom mirror; docs/plans/plan3-video-tier.md). Re-fit on tape-measured videos.
+TIER_REL = {"lidar": 0.0, "video": 0.25, "photo": 0.04}
 
 
 @dataclass

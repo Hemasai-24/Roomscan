@@ -24,3 +24,15 @@ def test_length_difference_detected():
     a, b = _plan(poly), _plan(poly, scale=1.01)          # 1% longer walls: fails 0.5% / 1 cm gate
     R2, t = align_plans(a, b)
     assert not all(x["pass"] for x in match_walls(a, b, R2, t))
+
+
+def test_partial_plan_aligns_onto_the_whole():
+    from roomscan.compare_plans import align_partial
+    whole = [(0, 0), (8, 0), (8, 3), (5, 3), (5, 6), (0, 6)]
+    part = [(5, 3), (8, 3), (8, 6), (5, 6)]                    # a different, smaller room elsewhere
+    a = _plan(whole)
+    a["rooms"].append(_plan(part)["rooms"][0])
+    b = _plan(part, rot_deg=270, shift=(-20, 7))
+    R2, t = align_partial(a, b)
+    m = match_walls(a, b, R2, t)
+    assert len(m) >= 4 and all(x["pass"] for x in m)     # L-room shares 2 wall lines with it

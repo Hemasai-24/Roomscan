@@ -53,3 +53,42 @@ def match_walls(plan_a, plan_b, R2, t, max_mid=0.3):
             out.append({"a": wa["id"], "b": best[1]["id"], "len_a": la, "len_b": lb, "diff_m": round(diff, 4),
                         "pass": bool(diff <= 0.01 or diff <= 0.005 * max(la, lb))})
     return out
+
+
+def _segs(plan):
+    out = []
+    for _, w in _walls(plan):
+        a, b = np.array(w["start"], float), np.array(w["end"], float)
+        out.append(((a + b) / 2, b - a))
+    return out
+
+
+def align_partial(plan_a, plan_b, tol=0.3):
+    """Align a plan that covers only part of plan_a (e.g. video vs LiDAR): for each right-angle turn, try the
+    shift that puts each wall of B on each parallel wall of A; keep the one landing most B walls on A walls."""
+    A, B = _segs(plan_a), _segs(plan_b)
+    ma = np.array([m for m, _ in A])
+    da = np.array([d / (np.linalg.norm(d) + 1e-9) for _, d in A])
+    best = None
+    for k in range(4):
+        ang = k * np.pi / 2
+        R2 = np.array([[np.cos(ang), -np.sin(ang)], [np.sin(ang), np.cos(ang)]]).round(12)
+        mb = np.array([m for m, _ in B]) @ R2.T
+        db = np.array([d / (np.linalg.norm(d) + 1e-9) for _, d in B]) @ R2.T
+        par = np.abs(db @ da.T) > 0.99                       # (nb, na) parallel pairs
+        for i, j in zip(*np.nonzero(par)):
+            t = ma[j] - mb[i]
+            d = np.linalg.norm((mb + t)[:, None] - ma[None], axis=2)
+            d[~par] = np.inf
+            near = d.min(1)
+            score = (int((near < tol).sum()), -float(near[near < tol].sum()))
+            if best is None or score > best[0]:
+                best = (score, R2, t)
+    _, R2, t = best
+    mb = np.array([m for m, _ in B]) @ R2.T + t
+    d = np.linalg.norm(mb[:, None] - ma[None], axis=2)
+    j = d.argmin(1)
+    ok = d[np.arange(len(mb)), j] < tol
+    if ok.any():
+        t = t + np.median(ma[j[ok]] - mb[ok], axis=0)
+    return R2, t

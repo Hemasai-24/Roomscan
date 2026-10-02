@@ -57,3 +57,33 @@ What this means, honestly:
 - **Repeatability fails.** The two whole-floor scans are split into rooms differently and room outlines
   still have many short steps, so wall pieces do not correspond one-to-one.
 - A ceiling of 6.14 m appears in one room with drift on (likely the stair void / an upper-floor plane).
+
+## Video tier (2026-10-03)
+**Models used (pretrained, no training; weights fetched by `scripts/fetch_weights.py`):**
+| Model | Version / source | License | Used for |
+|---|---|---|---|
+| VGGT-1B | `facebook/VGGT-1B` on Hugging Face, code `github.com/facebookresearch/vggt` (main, 2025) | weights: non-commercial research license (a separate `VGGT-1B-Commercial` checkpoint exists, gated) | camera poses + relative depth from video frames |
+| Depth Anything V2 Metric-Indoor-Large | `depth-anything/Depth-Anything-V2-Metric-Indoor-Large-hf` via transformers 4.56 | see model card (CC-BY-NC-4.0 for Large) | real-world scale only |
+
+**Calibration on our data:** Depth Anything reads ~41% too far on the sample phone (bias 1.408, fitted on the
+three LiDAR sample captures; leave-one-capture-out scale error -1.7% / -2.0% / +3.7%; same phone and flat, so
+optimistic). Video ranges (`TIER_REL["video"] = 0.25`) were widened from the single_room comparison below and
+are provisional until re-fitted on tape-measured videos.
+
+**Measured (video tier vs LiDAR tier on the same sample capture; LiDAR is the reference, not ground truth):**
+| Capture | Video rooms / area | LiDAR rooms / area | Footprint IoU | Walls >= 1 m within 3% | LiDAR length inside video 95% range |
+|---|---|---|---|---|---|
+| single_room (ranges fitted here) | 1 / 4.9 m2 | 2 / 12.3 m2 | 0.22 | 0 of 2 | 5 of 6 |
+| floor_only (held out) | 1 / 5.2 m2 | 10 / 36.9 m2 | 0.08 | 0 of 3 | 4 of 14 |
+
+What this means, honestly:
+- **The video tier runs end to end but does not yet meet its gate (walls within 3%).** It produces a plan
+  for only one piece of the walk.
+- **Cause:** VGGT fits 20 frames at a time on our 8 GB GPU; chunks are glued by shared frames, and the glue
+  drifts. Mirrors and glass (sample bathroom) flip whole chunks. The walk breaks into 3-5 pieces; the large
+  pieces have smeared floors (10-26 cm), so the pipeline keeps the most consistent piece (33-35 frames).
+- Inside a good piece poses are fine (rotation 1.4 deg, camera position 13 cm over a 4.2 m walk; camera height
+  1.43 m vs 1.45 m from LiDAR, so the metric scale is close).
+- Video sees little floor (~8% of points), so the walked camera path is used as known floor.
+- Next steps with more time: a global pose graph over all chunks instead of chained gluing; a larger GPU (one
+  VGGT pass over the whole walk); classic SfM (COLMAP) as a second opinion.
