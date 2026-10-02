@@ -32,7 +32,7 @@ def scale_rel_sigma(per_frame_spread, n_photos, path=CALIBRATION):
 def _widen(m, rel):
     half = (m["hi"] - m["lo"]) / 2
     h = float(np.hypot(half, 1.96 * rel * m["value"]))
-    m["lo"], m["hi"] = round(m["value"] - h, 4), round(m["value"] + h, 4)
+    m["lo"], m["hi"] = round(max(m["value"] - h, 0.0), 4), round(m["value"] + h, 4)   # lengths/areas >= 0
 
 
 def widen_room(room, rel):

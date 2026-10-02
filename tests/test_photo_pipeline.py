@@ -68,6 +68,15 @@ def test_widen_adds_scale_uncertainty():
     np.testing.assert_allclose((A["hi"] - A["lo"]) / 2, np.hypot(1.0, 1.96 * 0.10 * 12.0), rtol=1e-3)
 
 
+def test_wide_ranges_never_go_below_zero():
+    room = {"walls": [{"length": {"value": 1.0, "lo": -0.2, "hi": 2.2, "unit": "m"}}],
+            "floor_area": {"value": 2.0, "lo": 0.5, "hi": 3.5, "unit": "m2"},
+            "ceiling_height": {"value": 2.5, "lo": 2.4, "hi": 2.6, "unit": "m"}, "openings": []}
+    widen_room(room, 0.3)
+    assert room["walls"][0]["length"]["lo"] == 0.0
+    assert room["floor_area"]["lo"] == 0.0
+
+
 def test_cli_detects_photo_set(tmp_path):
     root = Path(__file__).resolve().parents[1]
     r = subprocess.run([sys.executable, str(root / "run.py"), str(tmp_path / "nothing"), "--tier", "photo"],
