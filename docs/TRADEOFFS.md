@@ -29,5 +29,11 @@ brief, why, and what that does to the reported numbers. Kept up to date as work 
 - **Own RANSAC instead of Open3D's.** Open3D's threaded `segment_plane` gave different planes on
   repeated runs of the same input despite a fixed seed. We use a seeded single-threaded NumPy
   RANSAC so the same capture always yields the same plan (repeatability gate). Cost: slower.
+- **Unseen ceilings use a prior.** When the ceiling was never in view, we report it as at least
+  the highest wall point seen, with the upper end at max(that + 0.3 m, 2.9 m), and flag
+  `ceiling_observed: false`. The interval is wide on purpose.
+- **Glass and mirrors (known gap).** Depth seen through glass or in a mirror looks like an
+  opening in the wall. We only report openings on fitted walls and reject implausible sizes;
+  explicit glass/mirror detection is not done yet, so a glass shower door can show as a door.
 - **Manhattan (right-angle) room footprints.** Wall outlines are snapped to two perpendicular
   directions. Rooms with angled walls will be squared off.
