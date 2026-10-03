@@ -55,7 +55,7 @@ def photos_to_capture(images, fx_exif, out_dir, runner, metric, bias):
 
 
 MIN_CLIPPED_AREA = 0.8   # m2: a clip leaving less than this is not trusted
-WALL_CLEAR = 0.3          # a bounding wall must be at least this far from the cameras' centre
+WALL_CLEAR = 0.1          # a bounding wall must be at least this far beyond the outermost cameras
 WALL_SPAN_MARGIN = 1.0    # ... and must extend to within this distance of the centre, along the wall
 
 
@@ -68,6 +68,15 @@ def clip_mask_to_walls(mask, grid, classes, angle, cams_plan):
     fh = classes["floor"].height
     walls = [w for w in classes["walls"] if is_tall_wall(w, fh)]
     centre = np.median(cams_plan, axis=0)
+    # a room's own wall cannot lie between two of its camera positions: bounds start beyond the outermost
+    # cameras (one outlier allowed, e.g. a doorway photo taken from the next room)
+    inner = cams_plan
+    if len(cams_plan) >= 4:          # drop the one camera that stretches the others' extent most (outlier)
+        def box(c):
+            return float(np.prod(c.max(axis=0) - c.min(axis=0) + 0.1))
+        far = int(np.argmin([box(np.delete(cams_plan, i, axis=0)) for i in range(len(cams_plan))]))
+        inner = np.delete(cams_plan, far, axis=0)
+    reach = {1: inner.max(axis=0), -1: inner.min(axis=0)}
     bounds = {}
     for axis, k in (("u", 0), ("v", 1)):
         for sign in (1, -1):
@@ -76,8 +85,9 @@ def clip_mask_to_walls(mask, grid, classes, angle, cams_plan):
                 if ax != axis:
                     continue
                 d = (off - centre[k]) * sign
+                beyond = (off - reach[sign][k]) * sign >= WALL_CLEAR
                 along = centre[1 - k]
-                if d >= WALL_CLEAR and a - WALL_SPAN_MARGIN <= along <= b + WALL_SPAN_MARGIN:
+                if beyond and a - WALL_SPAN_MARGIN <= along <= b + WALL_SPAN_MARGIN:
                     if best is None or d < best[0]:
                         best = (d, off)
             if best is not None:
