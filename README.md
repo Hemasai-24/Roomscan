@@ -1,16 +1,57 @@
 # Roomscan
 
-Turn a phone capture into a dimensioned floor plan (JSON + SVG/PNG) with a 95%
-interval on every measurement.
+**Phone capture in, dimensioned floor plan out.** One command turns a LiDAR scan, a walkthrough video or a
+few photos per room into a whole-property floor plan: rooms placed and connected, walls, floor areas,
+ceiling heights, doors and windows, damage regions with hidden-damage flags and repair line items — with a
+**95 % range on every number**. JSON to a published schema plus a rendered plan.
 
-Read [`docs/TRADEOFFS.md`](docs/TRADEOFFS.md) first: it lists the constraints this was
-built under and what they do to the reported numbers.
+> Built in ~42 hours for the Applied AI Engineer case study, without an iPhone. Start with
+> [`docs/compliance_matrix.md`](docs/compliance_matrix.md) (every requirement → file → status) and
+> [`docs/TRADEOFFS.md`](docs/TRADEOFFS.md) (assumptions, limitations and what we did instead, with numbers).
 
-Deliverables: [compliance matrix](docs/compliance_matrix.md) · [benchmark report](docs/benchmark_report.md) ·
-[fix loop](docs/fix_loop.md) · [technical report](docs/technical_report.md) · [capture protocol](docs/capture_protocol.md) ·
-[device matrix](docs/device_matrix.md) · raw data: `python scripts/fetch_data.py` · everything: `bash scripts/reproduce_all.sh`
+<p align="center"><img src="docs/images/home_photo_plan.png" width="48%"> <img src="docs/images/lidar_floor_plan.png" width="48%"></p>
+<p align="center"><em>Left: our own home from 24 phone photos (photo tier). Right: the provided LiDAR sample, 13 rooms.</em></p>
 
-## Quickstart (clean Linux machine, Python 3.10+)
+## Results at a glance
+Measured against tape on our own home (bedroom, hall, kitchen, bathroom; Samsung Galaxy M53) and on the
+provided sample captures. Details and every gate: [`docs/benchmark_report.md`](docs/benchmark_report.md).
+
+| | Result | Gate |
+|---|---|---|
+| Photo tier, whole-home footprint | **+6 %** (protocol capture), all 4 rooms placed and connected, no overlaps | ±8 % ✅ |
+| Photo tier, per-room areas | −21 % … +42 % | ±8 % ❌ |
+| Video tier | bedroom −31 %, bathroom +92 %; only part of a walk survives pose tracking | ±3 % ❌ |
+| Repeatability (same room twice) | 0 of 3 walls (video), 0 of 14 (LiDAR sample) | 1 cm ❌ |
+| Fix loop ([`docs/fix_loop.md`](docs/fix_loop.md)) | photo footprint **+30 % → +7.5 %** on the same photos | — |
+| Calibration | tape value inside our 95 % range for 4/4 room areas and 16/16 walls (ranges wide) | honest ✅ |
+| Damage | staged stain found, staged crack missed, 12 false alarms on photos | — |
+| Not done | LiDAR-tier ground truth and Polycam head-to-head (no LiDAR iPhone) | — |
+
+## How it works
+Every input is turned into the **same intermediate capture** — depth images + camera poses + lens
+intrinsics in metres — and **one back end** builds the plan. Tiers differ only in their front end and in how
+wide their ranges are.
+
+```
+LiDAR  (Stray Scanner export) ─ depth + ARKit poses ───────────────────────────┐
+Video  (.mp4/.mov)  ─ sharp frames → VGGT poses + depth → Depth Anything scale ─┼→ planes → rooms → walls,
+Photos (room folders) ─ per room: VGGT + Depth Anything + EXIF focal ───────────┘   doors, ceilings → ranges
+                                                         → rooms connected → damage → rules → plan.json + plan.png
+```
+
+<p align="center"><img src="docs/images/capture_contents.png" width="70%"><br>
+<em>What a capture contains: colour, LiDAR depth (blue = near) and LiDAR confidence.</em></p>
+
+Key decisions (why, in [`docs/technical_report.md`](docs/technical_report.md) and
+[`docs/INTERVIEW_NOTES.md`](docs/INTERVIEW_NOTES.md)):
+- Planes from **seeded, normal-consistent RANSAC** (Open3D's threaded RANSAC was not repeatable; plain RANSAC
+  invented floors at every height).
+- **Rooms** = floor split at doorways (distance transform + watershed); **doors/windows** = wall areas that
+  depth rays pass *through*, so an unseen wall is never called an opening.
+- **Honest ranges**: an unseen ceiling is reported as a wide, flagged range — never a confident number.
+- Pretrained models only (disclosed): VGGT-1B, Depth Anything V2 Metric-Indoor, Grounding DINO, SAM 2.1.
+
+## Quickstart (Linux, Python 3.10+)
     sudo apt install ffmpeg                                   # video tier decodes with ffmpeg/ffprobe
     python3 -m venv .venv
     .venv/bin/pip install -r requirements.txt                 # LiDAR tier (CPU only)
@@ -23,36 +64,30 @@ One command per capture; the tier is detected from what you pass:
     .venv/bin/python run.py <walkthrough.mp4>                 # video tier
     .venv/bin/python run.py <folder_of_room_folders>          # photo tier (one sub-folder of photos per room)
 
-Output: `outputs/<name>/plan.json` (schema: `schema/plan.schema.json`), `plan.svg`, `plan.png`.
-How to capture: [`docs/capture_protocol.md`](docs/capture_protocol.md) (one page). Options: `--tier`,
-`--drift-correction on|off`, `--rotate` (video recorded sideways without rotation metadata).
+Output: `outputs/<name>/plan.json` (schema: [`schema/plan.schema.json`](schema/plan.schema.json)), `plan.svg`,
+`plan.png`. How to capture: [`docs/capture_protocol.md`](docs/capture_protocol.md) (one page). Options:
+`--tier`, `--drift-correction on|off`, `--rotate`, `--no-damage`.
+Verified on a fresh clone: install 71 s, LiDAR run 33 s.
 
-## Code map (one file per pipeline step)
-| Step | File | What it does |
-|---|---|---|
-| 1 | `roomscan/load_capture.py` | Read a Stray Scanner export: depth images + phone position per frame |
-| 2 | `roomscan/point_cloud.py` | Depth pixels -> 3D points in room coordinates |
-| 3 | `roomscan/find_surfaces.py` | Flat surfaces (planes) labelled floor / ceiling / wall |
-| 4 | `roomscan/room_outline.py` | Room outline from above, snapped to the walls; wall lengths |
-| 5 | `roomscan/find_doors_windows.py` | Holes that depth rays pass through: door (reaches floor) or window |
-| 6 | `roomscan/measurements.py` | Every number as value + 95% range |
-| 7 | `roomscan/save_plan.py`, `roomscan/draw_plan.py` | JSON output (schema in `schema/`) and plan drawing |
-| 4a | `roomscan/split_rooms.py` | Cut the floor into rooms at doorways |
-| 4b | `roomscan/room_surfaces.py`, `roomscan/connect_rooms.py` | Each room's own floor/ceiling/walls; which rooms connect |
-| - | `roomscan/drift_correction.py` | Re-align a long walk chunk by chunk (on/off: `scripts/drift_ablation.py`) |
-| video | `roomscan/video_frames.py`, `video_poses.py`, `video_scale.py`, `video_capture.py`, `video_pipeline.py` | Sharp frames -> VGGT poses+depth -> metric scale -> Stray-like capture -> same back end |
-| photo | `roomscan/photo_folders.py`, `photo_room.py`, `photo_links.py`, `stitch_rooms.py`, `photo_pipeline.py` | One room per folder -> join rooms at shared doors -> one plan |
-| damage | `roomscan/damage_measure.py`, `damage_rules.py`, `repair_scope.py` | Damage size on its surface; hidden-damage rules R1-R5; repair line items |
-| bench | `roomscan/score_benchmark.py`, `compare_plans.py`, `scripts/` | Score vs tape ground truth; repeatability; tier-vs-LiDAR evals |
-| - | `roomscan/pipeline.py`, `run.py` | Runs the steps; the one command |
+## Reproduce every number
+    .venv/bin/python scripts/fetch_data.py          # our own raw captures (Google Drive) -> data/raw/m53
+    bash scripts/reproduce_all.sh                   # all tiers on the sample + our home (GPU); `lidar` = CPU part only
+    .venv/bin/python scripts/score_m53.py           # tape-measured scores -> outputs/m53_benchmark.json
 
-Docs: `docs/design.md` (design), `docs/plans/` (build plans), `docs/TRADEOFFS.md` (limitations),
-`docs/INTERVIEW_NOTES.md` (how and why, step by step), `docs/device_matrix.md`.
+Committed results: [`results/`](results). Fix loop before/after: tags `fix-before`, `fix-after`
+([`docs/fix_loop.diff`](docs/fix_loop.diff)). Tests: `.venv/bin/python -m pytest -m "not model"` (CPU, ~4 min)
+and `-m model` (GPU).
 
-## Tests
-    .venv/bin/python -m pytest -m "not model"   # CPU tests; sample-data tests run when sample_data/ exists
-    .venv/bin/python -m pytest -m model         # GPU model tests (needs weights)
-
-## Status
-See [`docs/compliance_matrix.md`](docs/compliance_matrix.md) for every requirement and its status, and
-[`docs/TRADEOFFS.md`](docs/TRADEOFFS.md) for measured limitations.
+## Repository map
+| Path | What |
+|---|---|
+| `run.py`, `roomscan/pipeline.py` | the one command; tier detection; LiDAR pipeline |
+| `roomscan/load_capture.py` … `measurements.py` | back end: capture → points → planes → rooms → outlines → openings → ranges |
+| `roomscan/split_rooms.py`, `room_surfaces.py`, `connect_rooms.py`, `drift_correction.py` | multi-room plan, adjacency, drift |
+| `roomscan/video_*.py` | video tier front end |
+| `roomscan/photo_*.py`, `stitch_rooms.py` | photo tier front end and stitching |
+| `roomscan/damage_*.py`, `repair_scope.py` | damage detection, measurement, rules R1-R5, scope |
+| `roomscan/score_benchmark.py`, `compare_plans.py`, `scripts/` | scoring, repeatability, evaluations, reproduction |
+| `docs/` | reports, protocol, device matrix, trade-offs; `docs/plans/` = the build plans as written |
+| `data/ground_truth/` | tape measurements (raw notes + CSV) |
+| `tests/` | 190+ tests (synthetic rooms with known answers + sample data) |
