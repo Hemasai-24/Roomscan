@@ -3,6 +3,41 @@
 Read this first: it lists every place this submission departs from the ideal case in the
 brief, why, and what that does to the reported numbers. Kept up to date as work proceeds.
 
+## Assumptions (what the code takes for granted)
+Each line: the assumption · where it matters · what breaks when it is false.
+
+**Geometry**
+- **Rooms are rectilinear** (walls meet at right angles, two main directions per capture) · outlines,
+  wall snapping, photo room bounds · angled or curved walls are squared off.
+- **One floor level per capture, gravity known** (ARKit / phone "up" = +Y) · floor/ceiling classification ·
+  a split-level home or a stair void can be mis-labelled (seen once: a 6.14 m "ceiling" over the stairs).
+- **A wall is vertical, flat and at least 1.4 m tall** · what blocks room splitting and bounds photo rooms ·
+  tall furniture (wardrobes, fridges) counts as wall; shallow jogs (< ~25 cm) are flattened.
+- **An opening is where depth passes through a wall** · doors/windows · closed doors are invisible; mirrors and
+  glass can create phantom openings.
+- **A room's own wall never lies between two of its own photo positions** (fix loop v2) · photo room bounds ·
+  photos taken from far outside a room (more than one) can stop a real wall being used.
+- **The ceiling is the highest large horizontal plane above 1.9 m** · ceiling height · when no ceiling is seen
+  we report a wide flagged range, never a confident number.
+
+**Scale and cameras**
+- **Depth Anything's bias (1.408, calibrated on the sample iPhone) holds for other phones** · video/photo
+  metric scale · on the Galaxy M53 the scale came out ~0-16 % large.
+- **The lens focal length in EXIF is right** (photo tier) · scale · edited/screenshotted photos lose EXIF; the
+  model's own focal guess is used then (8-22 % low on the sample).
+- **People hold the phone roughly upright** · first guess of "up" for video/photo · upside-down or rolled
+  captures need `--rotate`.
+
+**Our benchmark**
+- **Tape measurements are ±0.5 cm** and rooms are rectangles (two lengths per room were measured).
+- **Window values were written "width, height"**; we assumed that order (not stated by the measurer).
+  Sill heights and a second ceiling spot were not measured.
+- **LiDAR results on the sample data are a reference, not ground truth** (none exists for the sample).
+
+**Uncertainty**
+- **Ranges are 95 % and errors are independent per wall**; video/photo add a relative scale term fitted on
+  the sample (video σ 0.25, photo σ 0.6) — honest on our home (truth inside 4/4 areas, 16/16 walls) but wide.
+
 ## Constraints we worked under
 | Constraint | Consequence |
 |---|---|
