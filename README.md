@@ -1,6 +1,6 @@
 # Roomscan
 
-Turn a phone capture — LiDAR scan, walkthrough video, or a few photos per room — into a dimensioned
+Turn a phone capture, LiDAR scan, walkthrough video, or a few photos per room, into a dimensioned
 whole-home floor plan, with a 95 % range on every measurement.
 
 <p align="center"><img src="docs/images/home_photo_plan.png" width="60%"></p>
@@ -28,21 +28,21 @@ How to capture: [capture protocol](docs/capture_protocol.md).
 
 Measured against tape on our own home (4 rooms, Samsung Galaxy M53).
 
-| | Result | Gate |
-|---|---|---|
-| Photo tier — whole-home footprint | +6 %, all rooms placed and connected | ±8 % ✅ |
-| Photo tier — per room | −21 % to +42 % | ±8 % ❌ |
-| Video tier | −31 % to +92 % | ±3 % ❌ |
-| Fix loop (photo footprint) | +30 % → +7.5 % | — |
+| Measure | Result | Target | Status |
+|---|---|---|---|
+| Photo tier, whole-home footprint | +6 %, all rooms placed and connected | ±8 % | Pass |
+| Photo tier, per room | −21 % to +42 % | ±8 % | Fail |
+| Video tier | −31 % to +92 % | ±3 % | Fail |
+| Fix loop, photo footprint | +30 % before, +7.5 % after | | |
 
 Full results: [benchmark report](docs/benchmark_report.md).
 
 ## Documentation
 
-- [Compliance matrix](docs/compliance_matrix.md) — every requirement, where it is, its status
-- [Trade-offs and assumptions](docs/TRADEOFFS.md) — what we could not do and why
-- [Technical report](docs/technical_report.md) — architecture and design decisions
-- [Fix loop](docs/fix_loop.md) — declared fix, before / after
+- [Compliance matrix](docs/compliance_matrix.md), every requirement, where it is, its status
+- [Trade-offs and assumptions](docs/TRADEOFFS.md), what we could not do and why
+- [Technical report](docs/technical_report.md), architecture and design decisions
+- [Fix loop](docs/fix_loop.md), declared fix, before / after
 - [Device matrix](docs/device_matrix.md)
 
 ## Reproduce

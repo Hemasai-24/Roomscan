@@ -1,16 +1,16 @@
-# Capture protocol (one page) — follow it literally
+# Capture protocol (one page): follow it literally
 
 You need: an **iPhone 15 or newer**. LiDAR tier needs a **Pro / Pro Max**. About 10 minutes.
 
 ## 1. Install (1 minute)
 - **LiDAR tier:** App Store → install **"Stray Scanner"** (free, by Stray Robots). Allow camera access.
-- **Video / Photo tier:** nothing to install — use the built-in **Camera** app.
+- **Video / Photo tier:** nothing to install, use the built-in **Camera** app.
 
 ## 2. Prepare the space (2 minutes)
 - Turn **all lights on**, open curtains, **open the doors** between the rooms you capture.
 - Do not move furniture once you start. Keep people out of view.
 
-## 3. Capture — choose ONE tier
+## 3. Capture: choose ONE tier
 **LiDAR tier (Stray Scanner, Pro iPhone)**
 1. Open Stray Scanner, tap **record**.
 2. Hold the phone **upright** at chest height, pointing **forward and slightly down** so the
@@ -39,7 +39,7 @@ You need: an **iPhone 15 or newer**. LiDAR tier needs a **Pro / Pro Max**. About
 
 ## 4. Avoid
 - Fast turns or running; pointing at the floor or ceiling only; covering the camera.
-- Standing in front of a **mirror** for long (it shows a fake room); glass doors — look past them.
+- Standing in front of a **mirror** for long (it shows a fake room); glass doors, look past them.
 - Zoom, ultra-wide (0.5x), Live/Portrait/Panorama modes, filters.
 
 ## 5. Hand the files to the pipeline
@@ -58,5 +58,5 @@ Then on the laptop, **one command**:
 Output: `outputs/<name>/plan.json`, `plan.svg`, `plan.png`.
 
 *Note:* the Stray Scanner export menu wording may differ between app versions; the
-Files-app route always works. (We could not test this page on an iPhone ourselves — see
+Files-app route always works. (We could not test this page on an iPhone ourselves, see
 `docs/TRADEOFFS.md`.)

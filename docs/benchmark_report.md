@@ -8,7 +8,7 @@ and `python scripts/score_m53.py`; the **before-fix** photo run comes from tag `
 
 | Capture | Device | Tiers | Ground truth |
 |---|---|---|---|
-| **Own home** (bedroom, hall, kitchen, bathroom; hall connects all) — `data/raw/m53` | Samsung Galaxy M53 (no iPhone available) | photo (24 photos, 4 room folders), video (68 s walkthrough, bedroom ×2, bathroom low light) | **tape**, every wall / door / window / ceiling; staged damage (stain 9×6 cm, crack 8 cm) |
+| **Own home** (bedroom, hall, kitchen, bathroom; hall connects all), `data/raw/m53` | Samsung Galaxy M53 (no iPhone available) | photo (24 photos, 4 room folders), video (68 s walkthrough, bedroom ×2, bathroom low light) | **tape**, every wall / door / window / ceiling; staged damage (stain 9×6 cm, crack 8 cm) |
 | Provided sample: `single_room`, `single_scan_floor_only`, `single_scan_with_ceiling` | iPhone Pro (Stray Scanner) | LiDAR; video and photo tiers **simulated** from the same captures | none provided → LiDAR tier is the reference for video/photo |
 
 Not possible (no LiDAR iPhone): own LiDAR captures, LiDAR-tier tape accuracy, Polycam head-to-head.
@@ -22,17 +22,17 @@ Not possible (no LiDAR iPhone): own LiDAR captures, LiDAR-tier tape accuracy, Po
 | hall | 15.56 m² | 17.53 m² | +13 % | yes |
 | kitchen | 2.86 m² | 4.07 m² | +42 % | yes |
 | bathroom | 2.87 m² | 3.65 m² | +27 % | yes |
-| **whole property** | **29.65 m²** | **31.87 m²** | **+7.5 %** | — |
+| **whole property** | **29.65 m²** | **31.87 m²** | **+7.5 %** | n/a |
 
 | Gate (photo tier) | Result | Pass? |
 |---|---|---|
-| Footprint within ±8 % | +7.5 % (sum of room areas; errors partly cancel — summed absolute error ≈ 19 %; 2 rooms not stitched) | **pass, with caveats** |
+| Footprint within ±8 % | +7.5 % (sum of room areas; errors partly cancel, summed absolute error ≈ 19 %; 2 rooms not stitched) | **pass, with caveats** |
 | Wall lengths within ±8 % | 2 of 16 walls; mean error 74 cm | fail |
 | Stitch: all rooms placed and connected, correct adjacency | 1 of 3 connections (hall–kitchen); bedroom and bathroom drawn beside the plan | fail |
 | No room overlaps | max overlap ≤ 0.05 m² | pass |
 | Openings: ≤ 2 cm on ≥ 85 % (miss and phantom count as misses) | 1 of 9 within 2 cm before / 0 of 9 after the image-based door & window logic (our photos lack full-frame door shots) | fail |
 | Ceiling height ≤ 1.5 cm | ceilings not seen in the photos; reported as wide flagged ranges (truth 2.74 m inside, values 3.3-3.8 m) | fail |
-| Calibration (truth inside the 95 % range) | 4/4 room areas, 16/16 walls — **but the ranges are very wide** (area lower bound 0) | honest, not useful |
+| Calibration (truth inside the 95 % range) | 4/4 room areas, 16/16 walls, **but the ranges are very wide** (area lower bound 0) | honest, not useful |
 
 **Same photos, captured as the protocol now asks** (each doorway photo copied into both rooms' folders;
 `data/raw/m53_doorway_shared`, built by `scripts/make_doorway_shared.sh`: the same 24 photos with 3 doorway shots also copied into the hall folder):
@@ -46,12 +46,12 @@ Before the fix loop the whole-property footprint was **+30 %** (kitchen +145 %, 
 ### Video tier
 | Clip | Result | Tape |
 |---|---|---|
-| walkthrough (68 s) | 2 rooms, 21.1 m² covered | 29.66 m² (whole home) — only part of the walk survives pose tracking |
+| walkthrough (68 s) | 2 rooms, 21.1 m² covered | 29.66 m² (whole home), only part of the walk survives pose tracking |
 | bedroom, take 1 (21 s) | 5.76 m² (−31 %) | 8.37 m² |
 | bedroom, take 2 (14 s) | split into 3 pieces, 9.1 m² | 8.37 m² |
 | bathroom, low light (9 s) | 5.50 m² (+92 %) | 2.87 m² |
 | **Repeatability: bedroom take 1 vs take 2** | **0 of 3 walls within 1 cm / 0.5 %** (61, 99, 113 cm apart) | gate fails |
-| Ceiling (not filmed) | values 1.84-2.66 m, ranges 0.78-4.09 m; true 2.74 m inside every range (wide) | — |
+| Ceiling (not filmed) | values 1.84-2.66 m, ranges 0.78-4.09 m; true 2.74 m inside every range (wide) | n/a |
 
 Video gate (walls within ±3 %): **fails**. Root cause measured on the sample (section 3): camera-pose
 tracking keeps only 32-35 % of a walk.
@@ -59,11 +59,11 @@ tracking keeps only 32-35 % of a walk.
 ### Damage (staged in the bedroom)
 | | Result |
 |---|---|
-| Staged water stain (9 × 6 cm) | detected on the right wall (bedroom w3), measured 16 × 24 cm — but seen in **one photo only**, so the final 2-view rule no longer reports it |
+| Staged water stain (9 × 6 cm) | detected on the right wall (bedroom w3), measured 16 × 24 cm, but seen in **one photo only**, so the final 2-view rule no longer reports it |
 | Staged crack (8 cm) | **not detected** |
 | False alarms (photo tier, whole home) | 12 regions before the damage rules → **0** after (2 views, min area, stricter peeling paint) |
 | Concealed-damage flags | 3 × R2 fired on false alarms before the rules; 0 after |
-| Detector on public damage photos | 5 of 10 found (Grounding DINO @ 0.30); OWLv2 4/10 — `docs/TRADEOFFS.md` |
+| Detector on public damage photos | 5 of 10 found (Grounding DINO @ 0.30); OWLv2 4/10, `docs/TRADEOFFS.md` |
 
 ## 2. LiDAR tier on the provided sample (no ground truth)
 
@@ -78,7 +78,7 @@ tracking keeps only 32-35 % of a walk.
 | Repeatability (floor_only vs with_ceiling, same flat) | 14 walls paired, **0** within 1 cm / 0.5 % | fail |
 | Drift ablation, wall thickness off → on | with_ceiling 58.9 → 56.6 mm; floor_only 52.8 → 54.8 mm; synthetic injected drift 34 → 13 mm | ablation present; no measurable gain on real scans |
 | Ceilings (with_ceiling) | observed per room, 2.34-3.21 m | no ground truth |
-| Damage false alarms (undamaged flat) | 0 / 2 / 3 regions | — |
+| Damage false alarms (undamaged flat) | 0 / 2 / 3 regions | n/a |
 
 ## 3. Video and photo tiers vs LiDAR on the sample (simulated inputs, LiDAR = reference)
 

@@ -1,4 +1,4 @@
-# Roomscan — technical report
+# Roomscan: technical report
 
 *Max 6 pages. 2026-10-03. Numbers: `docs/benchmark_report.md` (own tape-measured home, Samsung Galaxy M53;
 provided sample captures).* Limitations are listed in full in `docs/TRADEOFFS.md`.
@@ -16,8 +16,8 @@ provided sample captures).* Limitations are listed in full in `docs/TRADEOFFS.md
      ─► every number as {value, lo, hi} (95 %) ─► plan.json (published schema) + plan.svg/png
 ```
 
-**One idea carries the design:** every tier is converted into the same intermediate form — depth images,
-camera poses and intrinsics in metres, written in Stray Scanner's file layout — and one back end produces the
+**One idea carries the design:** every tier is converted into the same intermediate form, depth images,
+camera poses and intrinsics in metres, written in Stray Scanner's file layout, and one back end produces the
 plan. Tiers differ only in their front end and in how wide their ranges are. This gives the brief's "same
 output contract from each tier, intervals that widen as sensor data thins" by construction, and every
 improvement to the back end helps all three tiers.
@@ -38,7 +38,7 @@ JSON.
 | Video | any iPhone 15+ | Camera app | VGGT-1B in 20-frame chunks (bf16, 5.5 GB), Depth Anything V2 Metric-Indoor for scale (bias-calibrated) | + relative scale σ |
 | Photo | any iPhone 15+ | Camera app | VGGT on each room's 2-8 photos jointly, EXIF focal, Depth Anything scale; rooms stitched at shared doors | + relative scale σ (wide) |
 
-**Capture route:** Route 2 — `docs/capture_protocol.md` (one page). Chosen because it needs no Mac,
+**Capture route:** Route 2, `docs/capture_protocol.md` (one page). Chosen because it needs no Mac,
 TestFlight or install step beyond a free app, and the provided sample data is in Stray Scanner's format.
 **Device matrix with measured accuracy:** `docs/device_matrix.md`.
 
@@ -66,13 +66,13 @@ ablation is reported.
 
 | Capture | Wall thickness off → on | Rooms off → on |
 |---|---|---|
-| synthetic room, injected 3° / 8 cm drift | 34 → 13 mm | — |
+| synthetic room, injected 3° / 8 cm drift | 34 → 13 mm | n/a |
 | with_ceiling (sample) | 58.9 → 56.6 mm | 8 → 10 |
 | floor_only (sample) | 52.8 → 54.8 mm | 10 → 8 |
 
 **Honest reading:** the method removes injected drift, but on the real scans the effect is within the noise of
 our sharpness metric (dominated by furniture near walls), and correction changes how rooms are split, so the
-default is **off**. Next: loop closure — both whole-floor walks end 17 / 39 cm from their start — with a pose
+default is **off**. Next: loop closure, both whole-floor walks end 17 / 39 cm from their start, with a pose
 graph, and a drift metric restricted to wall-pair thickness.
 
 ## 4. Error budget (LiDAR tier, per wall length)
@@ -101,9 +101,9 @@ Every reported number is a 95 % range. Calibration means: the true value falls i
 - **Video:** relative σ widened to 0.25 from the sample comparison (LiDAR as reference): LiDAR length inside the
   video range 5/6 (in-sample) and 4/14 (held-out) → still over-confident on held-out data.
 - **Photo:** relative σ 0.6; leave-one-capture-out wall coverage 86 % and 93 % vs LiDAR. **On our tape-measured
-  home: 4/4 room areas and 16/16 walls inside their ranges — calibrated, but the ranges are so wide (area
+  home: 4/4 room areas and 16/16 walls inside their ranges, calibrated, but the ranges are so wide (area
   lower bound 0) that they carry little information.** Tightening them needs the accuracy fixed first.
-- Rule: never confident garbage — when an input cannot support a number (unseen ceiling, a room from < 2
+- Rule: never confident garbage, when an input cannot support a number (unseen ceiling, a room from < 2
   photos, a failed reconstruction), the number is either wide and flagged or omitted with a warning.
 
 ## 6. The fix loop (`docs/fix_loop.md`, tags `fix-before` / `fix-after`)

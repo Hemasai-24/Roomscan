@@ -36,22 +36,22 @@ Each line: the assumption · where it matters · what breaks when it is false.
 
 **Uncertainty**
 - **Ranges are 95 % and errors are independent per wall**; video/photo add a relative scale term fitted on
-  the sample (video σ 0.25, photo σ 0.6) — honest on our home (truth inside 4/4 areas, 16/16 walls) but wide.
+  the sample (video σ 0.25, photo σ 0.6), honest on our home (truth inside 4/4 areas, 16/16 walls) but wide.
 
-## Doors, windows and damage — logic added on the last evening (measured)
+## Doors, windows and damage: logic added on the last evening (measured)
 **Doors and windows from the image** (`roomscan/visual_openings.py`): a detector box ("door. window.") is turned
 into metres by casting rays through its left/right/top/bottom edges onto the fitted wall; the same opening in
 several views is merged. Boxes cut at the photo's left/right edge are rejected (width unknown); if only the
 top/bottom is cut, the width is kept and the height is reported as unknown. Implausible sizes are rejected.
 Photo/video: these replace the depth-carved openings; LiDAR: added only where nothing was carved (closed doors).
-A bug found on the way: sideways video frames had their edges read in the wrong axis — fixed and tested.
+A bug found on the way: sideways video frames had their edges read in the wrong axis, fixed and tested.
 **Result:** our home's photos have no straight-on, full-frame door shots, so doors are rarely measurable:
 0 of 9 openings within 2 cm (before: 1 of 9, with 6 phantoms either way). The capture protocol now asks for
 one straight-on photo per door and window. On the LiDAR sample 3-4 image openings are measured per capture.
 
 **Damage rules:** a region must be seen in **2+ views on every tier** (photos too), be ≥ 0.003 m², and
 "peeling paint" needs score ≥ 0.45. Detector threshold 0.35 → 0.30. Effect: photo false alarms on our home
-12 → 0, **but the staged stain is no longer reported** — it was in only one photo (the protocol now asks for
+12 → 0, **but the staged stain is no longer reported**, it was in only one photo (the protocol now asks for
 two). Detector comparison, full pipeline:
 
 | Detector | Real damage found in 10 public photos (Wikimedia, detection only) | False alarms, undamaged sample flat (3 captures) |
@@ -61,7 +61,7 @@ two). Detector comparison, full pipeline:
 | OWLv2 @ 0.20 (`ROOMSCAN_DAMAGE_DETECTOR=owlv2+sam2`) | 4/10 | 5 (incl. 2 "mould") |
 
 Cracks are the weak class (1 of 4 crack photos found). **Tried a crack specialist:** YOLO11n-seg fine-tuned
-15 epochs on the Ultralytics crack-seg dataset (val mAP50 0.76 in its own domain) — on wall cracks it also found
+15 epochs on the Ultralytics crack-seg dataset (val mAP50 0.76 in its own domain), on wall cracks it also found
 1 of 4, with 16-105 of 153 clean frames showing a "crack" depending on confidence (Grounding DINO: 91/153 before
 our filters). Not adopted: a domain gap (pavement/concrete training data vs indoor walls); fixing it needs
 labelled indoor wall-crack images. Microsoft's building-damage model was considered and ruled out: it rates
@@ -85,23 +85,23 @@ whole buildings from satellite images. Scripts: `scripts/experiments/`. Public p
 | Repeatability (same room twice, same tier) | The two whole-floor sample scans of the same apartment | Different walk paths, so this is a harder test than two identical captures |
 
 ## Own benchmark (2026-10-03)
-Captured our own home (bedroom, hall, kitchen, bathroom) with a **Samsung Galaxy M53** — photos and videos —
+Captured our own home (bedroom, hall, kitchen, bathroom) with a **Samsung Galaxy M53**, photos and videos -
 and tape-measured every wall, door, window and ceiling (`data/ground_truth/`). Results and gates:
 `docs/benchmark_report.md`. Caveats: tape not laser (±0.5 cm); an Android phone, not an iPhone 15; window
 widths/heights assigned assuming "width first"; sill heights and a second ceiling spot not measured; staged
 damage is small (stain 9 × 6 cm, crack 8 cm). The fix-loop rule (v2) was refined while looking at this same
 capture (see `docs/fix_loop.md`).
 
-**Tried and rejected — room shape, measured on our home (photo tier) and the LiDAR sample:**
+**Tried and rejected, room shape, measured on our home (photo tier) and the LiDAR sample:**
 | Change (branch) | Bedroom | Hall | Kitchen | Bathroom | Home total | LiDAR sample area |
 |---|---|---|---|---|---|---|
 | none (shipped) | −21 % | +10 % | +42 % | +27 % | +6 % | 41.0 m² |
 | low furniture counts as floor (`low-furniture`) | **−6 %** | +25 % | +42 % | +27 % | +18 % | 47.4 m² |
 | fill shallow furniture notches (`fill-furniture-notches`) | **−9 %** | +10 % | +74 % | +29 % | +13 % | 48.3 m² |
-| UniDepth V2 metric depth with EXIF focal (`exp-metric-depth`) | +16 % | +61 % | +32 % | **−5 %** | +39 % | — |
+| UniDepth V2 metric depth with EXIF focal (`exp-metric-depth`) | +16 % | +61 % | +32 % | **−5 %** | +39 % | n/a |
 
 Each fixes the room it targets and breaks others. UniDepth's **scale** is far better (0.998× LiDAR depth,
-per-frame std 0.11, vs Depth Anything 1.425×, std 0.30 on the sample — `docs/experiments/metric_depth.md` on its
+per-frame std 0.11, vs Depth Anything 1.425×, std 0.30 on the sample, `docs/experiments/metric_depth.md` on its
 branch), but our room-shape rules use thresholds in metres that were tuned at the old scale. Conclusion: the
 bottleneck is building a room's shape from a few photos; it needs a scale-robust redesign, not more rules.
 
@@ -113,7 +113,7 @@ Kept the original setting; the plan drawing hides wall labels under 0.5 m instea
 **Tried and rejected (measured on our home):** sharing doorway views between rooms automatically (branch
 `auto-doorway-share`). Only hall↔kitchen had enough feature matches (28) to be detected; bedroom and bathroom
 stayed unconnected, and the kitchen grew to +229 % because it absorbed hall floor from the shared photo. The
-morning experiment's 3/3 connections needed the *identical* doorway photo placed in both folders by hand —
+morning experiment's 3/3 connections needed the *identical* doorway photo placed in both folders by hand -
 so the capture protocol asks for that, and automatic detection remains future work.
 
 ## Not done (and why)
@@ -135,7 +135,7 @@ so the capture protocol asks for that, and automatic detection remains future wo
 - **Manhattan (right-angle) room footprints.** Wall outlines are snapped to two perpendicular
   directions. Rooms with angled walls will be squared off.
 
-## Plan 2 results (LiDAR tier, sample data, 2026-10-03 early morning — current numbers: `docs/benchmark_report.md` §2)
+## Plan 2 results (LiDAR tier, sample data, 2026-10-03 early morning: current numbers: `docs/benchmark_report.md` §2)
 | Check | Result | Gate |
 |---|---|---|
 | Rooms found (single_room / floor-only / with-ceiling) | 2 / 10 / 8 | - |
@@ -234,13 +234,13 @@ and pose and measured on the wall/floor/ceiling plane it lies on (area, width, h
 **No damage in the sample flat, so we measured false alarms there and recall on painted damage:**
 - Detector alone, 20 frames: false alarms 33 / 17 / 7 / 2 / 0 at score 0.25 / 0.30 / 0.35 / 0.40 / 0.45 (tile
   grout as "crack", plants and posters as "peeling paint", ceiling lights and vents as "hole"). A stain and a
-  jagged line painted onto a frame score 0.44 / 0.46 — so a high threshold would also miss real damage. We keep
+  jagged line painted onto a frame score 0.44 / 0.46, so a high threshold would also miss real damage. We keep
   0.35 and filter instead: a region must be seen in **2+ views** (LiDAR/video), **no "hole" on ceilings**,
-  **floors keep only mould** (shiny tiles: reflections and grout — the brief's "wet-look surfaces"), and wall
+  **floors keep only mould** (shiny tiles: reflections and grout, the brief's "wet-look surfaces"), and wall
   damage lying entirely in the **bottom 12 cm** (skirting-board joint) is dropped.
 - Full pipeline on the three undamaged captures (2 views/s, max 150, 1280 px): **0 / 2 / 3 false regions**
   (single_room / floor_only / with_ceiling), from 1 / 10 / 4 before the floor and skirting rules. The 5 left are
-  persistent look-alikes (a door edge, a poster, a vent, a shelf edge) — multiple views cannot reject those.
+  persistent look-alikes (a door edge, a poster, a vent, a shelf edge), multiple views cannot reject those.
 - **Painted damage with known truth** (`scripts/synthetic_damage_e2e.py`: 0.40 x 0.30 m stain and 0.60 m crack
   drawn in 3D on a real wall of with_ceiling, true poses, depth occlusion): the stain was visible in only 3 of
   150 views; it **was found** (2 views, right height) but split into 3 records because it sat on an inside
