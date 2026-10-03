@@ -1,58 +1,54 @@
-# Own benchmark capture — Samsung S23 + tape measure (≈ 60-75 min)
+# Own benchmark capture — Samsung S23 + tape (≈ 75 min)
 
-Purpose: real photo/video captures of our own rooms with tape-measured ground truth.
-The sample data has no ground truth, so these numbers are the only true accuracy we report.
+Our only real ground truth. Follow in order.
 
-## Before you start (5 min)
-- **Pick the space:** 3 rooms + the corridor/hallway that connects them (the brief needs
-  "three or more rooms plus a connector"). If possible include the **bathroom** (mirror,
-  glass, wet-look tiles — the brief asks us to cover these).
-- **Damage room:** in one of the rooms, stage 2 kinds of damage on a wall:
-  1. *Water stain:* a sheet of paper (A4) with a brown stain made with strong tea/coffee,
-     taped flat on the wall around 1 m high.
-  2. *Crack:* a 30-50 cm jagged line drawn with a dark marker on masking tape stuck to the wall.
-  Measure each one (width x height, in cm) and its height above the floor.
-- **Lights:** all lights on, curtains open. Keep the doors between the rooms open.
-- **Phone camera settings (important):**
-  - Main camera, **1x**. Never zoom, never 0.6x ultra-wide.
-  - Photo ratio **4:3**. Video **1080p, 30 fps**, ratio 16:9 is fine.
-  - Settings → turn **off**: Scene optimizer, Auto HDR (if shown), Video stabilization "Super steady".
-  - Hold the phone **upright (portrait)** for everything.
+## 1. Phone settings (5 min) — Camera app → gear icon
+- Scene optimizer **OFF** · Video stabilisation / Super steady **OFF** · HDR10+ video **OFF** · Motion photos **OFF**
+- Video size **FHD 1080p, 30 fps** · photos JPEG (default)
+- Always the **1x** lens (never 0.6x, never zoom). Hold the phone **upright (portrait)** for everything.
 
-## Photos (per room, 2-3 min each)
-Make one album/folder per room (or note which photos belong to which room).
-1. Stand in **each corner**, point the phone at the **opposite corner**, tilted slightly down
-   so the line where wall meets floor is visible. (4 photos)
-2. One photo of **each door** from inside the room, the whole door frame in view.
-3. Total **6-8 photos** per room. Don't move furniture; don't include people.
-4. The corridor counts as a room: photos from both ends looking along it.
+## 2. Prepare (10 min)
+- Choose **3 rooms + the corridor** joining them (include the bathroom if possible).
+- All lights on, curtains open, **doors between them open**. Don't move furniture afterwards.
+- Name them on paper: room1, room2, room3, corridor (+ which doorway joins which).
+- **Staged damage** in one room, one wall, ~1 m high:
+  - water stain: A4 sheet soaked in strong tea/coffee, slightly dried, taped **flat**;
+  - crack: 40-50 cm masking-tape strip with a **thick dark zig-zag** marker line.
 
-## Video (one walkthrough, 1-2 min)
-1. Start in room 1, walk slowly (half walking speed) through **every room and the corridor**,
-   going through the doors, and come back to where you started.
-2. Keep the phone at chest height, pointing roughly forward and slightly down; slowly pan
-   left/right so every wall is seen at least once. No fast turns.
-3. Then record **room 1 again, on its own, twice** (two separate 30-s clips, same way) —
-   this is the repeatability test (same room, same tier, twice).
-4. One extra 30-s clip of the bathroom/mirror with the **lights off except one lamp**
-   (low-light case).
+## 3. Photos (≈ 3 min per room)
+In each room (corridor too), finish one room before the next:
+1. **4 corner photos:** stand in each corner, aim at the opposite corner, tilted slightly down so the
+   wall-floor line shows.
+2. **1 photo of each door** from inside the room (whole frame visible).
+3. **Doorway photos (important):** stand IN each doorway between two rooms and take **one photo looking
+   into each of the two rooms**. Note them, e.g. "doorway room1-corridor: last 2 photos".
+4. Damage room only: 1 photo of the damage from ~1.5 m.
+5. Corridor: 2-3 photos from each end looking along it.
+Write the count per room as you go ("room1: 8 photos, doorway room1-corridor: 2").
 
-## Measurements (30 min) — fill `data/ground_truth/own_rooms.csv`
-Name walls of each room **W1, W2, ...** going clockwise starting from the wall with the
-door you entered by. Measure at floor level, wall to wall (skirting board to skirting board).
-- every wall length
-- ceiling height in 2 different spots per room
-- every door: width (inside the frame) and height
-- every window: width, height, sill height above floor
-- each staged damage: width, height, height above floor
-Tape is fine; write cm to the nearest 0.5 cm.
+## 4. Videos
+1. **Walkthrough (1-2 min):** start in room1, walk at **half speed** through every room and the corridor,
+   through the doors, **end where you started**. Chest height, aim forward and slightly down, pan slowly so
+   every wall is seen once, glance up at each ceiling.
+2. **Room1 twice:** two separate 30-s clips of room1 only, recorded the same way (repeatability).
+3. **Low light:** 30-s clip of the bathroom with only one small light on.
 
-## Hand-off
-Copy everything to the laptop into `~/projects/floorplan-pipeline/data/raw/s23/` like this:
-```
-data/raw/s23/photos/<room_name>/*.jpg      one folder per room
-data/raw/s23/video/walkthrough.mp4
-data/raw/s23/video/room1_take1.mp4, room1_take2.mp4, lowlight.mp4
-```
-(USB cable, or upload to Google Drive and download.) Keep the original files — don't edit,
-crop or compress them; the photo metadata (EXIF) tells us the lens focal length.
+## 5. Tape measurements (≈ 30 min)
+Walls of each room are **W1, W2, …** clockwise, starting with the wall holding the door you entered by.
+Measure at floor level, to the nearest 0.5 cm:
+- every wall length (corner to corner)
+- ceiling height in 2 spots (C1, C2)
+- every door: width inside the frame, height (D1, D2 …)
+- every window: width, height, sill height above floor (N1 …)
+- damage: stain width × height and height of its bottom edge above floor; crack length
+Format: `room1 W1 412.5` · `room1 C1 268` · `room1 D1 width 82 height 205` · `damage stain 21x29.7 bottom 98`
+(or photograph the paper sheet).
+
+## 6. Optional: Polycam (20 min)
+Install Polycam (free) on the S23, scan 2 of the same rooms in **Photo mode**, export. Labelled as a
+photo-mode comparison (the brief asks for LiDAR; no LiDAR phone available).
+
+## 7. Hand-off
+Copy everything **unedited** (USB cable or Google Drive) to `~/projects/floorplan-pipeline/data/raw/s23/`:
+`photos/` (all photos, unsorted is fine) and `video/` (all clips). Send the measurements + photo counts;
+we sort photos into room folders together.
