@@ -163,13 +163,15 @@ def measure_photo_room(cap_dir, room_id, tier="photo", extent="floor"):
         if box is not None:
             mask, grid = _box_mask(box)
         else:
-            masks, grid = split_rooms(classes, angle, extra_free=camera_path(cap, angle))
+            core = extent == "core"         # experiment: one floor piece (most cameras), no camera-path widening
+            masks, grid = split_rooms(classes, angle, extra_free=None if core else camera_path(cap, angle))
             cq = to_plan(cams, angle)
             ij = grid.cells(cq)
-            hit = [m for m in masks if any(0 <= x < m.shape[1] and 0 <= y < m.shape[0] and m[y, x] for x, y in ij)]
+            counts = [sum(1 for x, y in ij if 0 <= x < m.shape[1] and 0 <= y < m.shape[0] and m[y, x]) for m in masks]
+            hit = [m for m, c in zip(masks, counts) if c > 0]
             if not hit:
                 raise CaptureError("cameras are not inside any recovered floor region")
-            mask = np.logical_or.reduce(hit)
+            mask = masks[int(np.argmax(counts))] if core else np.logical_or.reduce(hit)
         s = surfaces_for_room(classes, mask, grid, angle)
         if s["ceiling"] is not None and s["ceiling"].height - s["floor"].height > MAX_PHOTO_CEILING:
             warnings.append(f"ceiling reading {s['ceiling'].height - s['floor'].height:.2f} m is implausible "
