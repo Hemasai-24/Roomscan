@@ -28,3 +28,21 @@ def test_damage_and_flags_drawn(tmp_path):
     render(plan, tmp_path / "p")
     svg = (tmp_path / "p.svg").read_text()
     assert "dmg_0" in svg and "dmg_1" in svg and "R1" in svg
+
+
+def M(v, h, unit="m"):
+    return {"value": v, "lo": v - h, "hi": v + h, "unit": unit}
+
+
+def test_short_walls_get_no_label_and_long_ones_show_their_range():
+    from roomscan.draw_plan import wall_label
+    assert wall_label({"length": M(0.3, 0.02)}) is None
+    assert wall_label({"length": M(3.42, 0.06)}) == "3.42 m ±6 cm"
+
+
+def test_room_label_says_when_the_ceiling_was_not_seen():
+    from roomscan.draw_plan import room_label
+    room = {"name": "kitchen", "floor_area": M(4.07, 1.2, "m2"), "ceiling_height": M(2.9, 0.6), "ceiling_observed": False}
+    assert room_label(room) == "kitchen\n4.1 m² ±1.2\nceiling not seen"
+    room["ceiling_observed"] = True
+    assert room_label(room).endswith("ceiling 2.90 m")
