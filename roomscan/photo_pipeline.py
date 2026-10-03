@@ -9,12 +9,12 @@ import numpy as np
 
 from roomscan.find_surfaces import CaptureError
 from roomscan.photo_folders import load_room_images, room_folders
-from roomscan.photo_links import room_links
+from roomscan.photo_links import room_links, share_doorway_photos
 from roomscan.save_plan import build_plan
 from roomscan.stitch_rooms import stitch
 from roomscan.video_scale import CALIBRATION, KEY
 
-MIN_PHOTOS, MAX_PHOTOS = 2, 8          # VGGT fits 8 photos at 392x518 in 8 GB
+MIN_PHOTOS, MAX_OWN_PHOTOS, MAX_PHOTOS = 2, 8, 11   # own photos per room; + shared doorway views (VGGT: 20 frames fit 8 GB)
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -84,6 +84,7 @@ def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None):
         raise CaptureError(f"{path}: no room folders with photos")
     reconstruct = reconstruct or _model_reconstruct()
     infos, images, warnings, per_room = [], [], [], {}
+    loaded = []                                     # phase 1: every room's photos
     for f in folders:
         imgs, fx, names, dropped = load_room_images(f)
         rid = f.name
@@ -92,10 +93,17 @@ def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None):
         if len(imgs) < MIN_PHOTOS:
             warnings.append(f"{rid}: {len(imgs)} photo(s); a room needs at least {MIN_PHOTOS} photos - skipped")
             continue
-        if len(imgs) > MAX_PHOTOS:
-            keep = np.linspace(0, len(imgs) - 1, MAX_PHOTOS).round().astype(int)
-            warnings.append(f"{rid}: {len(imgs)} photos; using {MAX_PHOTOS} spread over the set")
+        if len(imgs) > MAX_OWN_PHOTOS:
+            keep = np.linspace(0, len(imgs) - 1, MAX_OWN_PHOTOS).round().astype(int)
+            warnings.append(f"{rid}: {len(imgs)} photos; using {MAX_OWN_PHOTOS} spread over the set")
             imgs = imgs[keep]
+        loaded.append((rid, imgs, fx))
+    # phase 2: a photo that sees into a neighbouring room is used in that room too (a shared camera ties the
+    # two rooms' positions together; the user does not have to put doorway photos in both folders)
+    shared_sets, shares = share_doorway_photos([imgs for _, imgs, _ in loaded], max_photos=MAX_PHOTOS)
+    shared_meta = [{"from_room": loaded[s["from_room"]][0], "to_room": loaded[s["to_room"]][0],
+                    "photo": s["photo"], "matches": s["matches"]} for s in shares]
+    for (rid, _, fx), imgs in zip(loaded, shared_sets):   # phase 3: reconstruct and measure each room
         try:
             m, info = reconstruct(imgs, fx, out_dir / "photo_rooms" / rid, rid)
         except Exception as e:                       # one bad room must not sink the property
@@ -121,7 +129,7 @@ def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None):
                 warnings.append(f"{m['room']['id']}: no fitted surfaces (fallback room) - damage not checked")
     links = room_links(images)
     rooms, adjacency, stitch_warnings = stitch(infos, links)
-    meta = {"n_rooms": len(rooms), "rooms": per_room,
+    meta = {"n_rooms": len(rooms), "rooms": per_room, "shared_photos": shared_meta,
             "links": [{"room_a": infos[i]["room"]["id"], "room_b": infos[j]["room"]["id"], **v}
                       for (i, j), v in sorted(links.items())],
             "runtime_s": round(time.time() - t0, 1)}

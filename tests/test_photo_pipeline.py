@@ -103,3 +103,16 @@ def test_photo_damage_measured_per_room_before_stitching(tmp_path):
     assert plan["damage"] and all(d["room_id"] == "hall" for d in plan["damage"])
     assert all(isinstance(d["single_view"], bool) for d in plan["damage"])
     assert plan["scope_items"]
+
+
+def test_doorway_views_are_shared_before_reconstruction(tmp_path):
+    seen = {}
+
+    def recon(imgs, fx, out_dir, rid):
+        seen[rid] = len(imgs)
+        return _fake_reconstruct(imgs, fx, out_dir, rid)
+
+    plan = run_photos(_photo_set(tmp_path / "in"), tmp_path / "out", reconstruct=recon)
+    assert seen == {"hall": 3, "kitchen": 3}           # each got the other's doorway view
+    assert [(s["from_room"], s["to_room"]) for s in plan["meta"]["shared_photos"]] == [("hall", "kitchen"),
+                                                                                      ("kitchen", "hall")]

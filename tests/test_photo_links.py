@@ -49,3 +49,25 @@ def test_failed_fit_mask_is_not_counted(monkeypatch):
     pts = rng.random((13, 2)).astype(np.float32) * 300
     fa, fb = (pts, d), (pts + 1, d + 1e-3 * rng.random(d.shape).astype(np.float32))
     assert pl._inliers(fa, fb, cv2.BFMatcher(cv2.NORM_L2)) == 0
+
+
+def test_doorway_photos_are_shared_between_linked_rooms_only():
+    from roomscan.photo_links import share_doorway_photos
+    shared = cv2.resize(_texture(99), (150, 150))
+    room_a = np.stack([_photo(1), _photo(2, shared, at=(300, 200))])
+    room_b = np.stack([_photo(3, cv2.resize(shared, (170, 170)), at=(250, 180)), _photo(4)])
+    room_c = np.stack([_photo(5), _photo(6)])
+    out, shares = share_doorway_photos([room_a, room_b, room_c], min_matches=25, max_photos=8)
+    assert len(out[0]) == 3 and np.array_equal(out[0][2], room_b[0])     # A gets B's doorway view
+    assert len(out[1]) == 3 and np.array_equal(out[1][2], room_a[1])     # B gets A's doorway view
+    assert len(out[2]) == 2                                              # C is linked to nobody
+    assert sorted((s["from_room"], s["to_room"]) for s in shares) == [(0, 1), (1, 0)]
+
+
+def test_sharing_respects_the_photo_limit():
+    from roomscan.photo_links import share_doorway_photos
+    shared = cv2.resize(_texture(99), (150, 150))
+    room_a = np.stack([_photo(1), _photo(2, shared, at=(300, 200))])
+    room_b = np.stack([_photo(3, cv2.resize(shared, (170, 170)), at=(250, 180)), _photo(4)])
+    out, shares = share_doorway_photos([room_a, room_b], min_matches=25, max_photos=2)
+    assert len(out[0]) == 2 and len(out[1]) == 2 and shares == []

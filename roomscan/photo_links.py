@@ -55,3 +55,22 @@ def room_links(images_by_room, min_matches=25):
             if best[0] >= min_matches:
                 links[(i, j)] = {"matches": best[0], "photo_i": best[1], "photo_j": best[2]}
     return links
+
+
+def share_doorway_photos(images_by_room, min_matches=25, max_photos=10):
+    """Give linked rooms a common camera: for every room pair whose best photo pair has >= min_matches
+    consistent matches, append each room's best-matching photo to the other room's set. Both rooms are then
+    reconstructed with that shared view, which ties their positions together (a doorway photo in both
+    folders, done automatically). Rooms already at max_photos receive nothing.
+    Returns (new image stacks, [{"from_room", "photo", "to_room", "matches"}])."""
+    links = room_links(images_by_room, min_matches)
+    extra = {i: [] for i in range(len(images_by_room))}
+    shares = []
+    for (i, j), v in sorted(links.items()):
+        for src, photo, dst in ((i, v["photo_i"], j), (j, v["photo_j"], i)):
+            if len(images_by_room[dst]) + len(extra[dst]) < max_photos:
+                extra[dst].append(images_by_room[src][photo])
+                shares.append({"from_room": src, "photo": int(photo), "to_room": dst, "matches": v["matches"]})
+    out = [np.concatenate([imgs, np.stack(extra[k])]) if extra[k] else imgs
+           for k, imgs in enumerate(images_by_room)]
+    return out, shares
