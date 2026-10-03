@@ -13,7 +13,7 @@ ranges are, so any fix to the back end helps all three.
 
 ![Photo tier on our home](images/home_photo_plan.png)
 
-*Figure 1. Photo tier on our home (24 photos, Galaxy M53). Room order, connections and door positions are right;
+*Figure 1. Photo tier on our home (24 photos plus 4 door photos, Galaxy M53). Room order, connections and door positions are right;
 room shapes and windows are not, and doors are 3-10 cm too wide (see section 8 and the benchmark report).*
 
 ![LiDAR tier on the sample flat](images/lidar_floor_plan.png)
