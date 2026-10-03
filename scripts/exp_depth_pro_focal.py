@@ -19,7 +19,7 @@ from roomscan.video_frames import read_frames, sharpness         # noqa: E402
 from roomscan.video_scale import MetricDepth, load_bias          # noqa: E402
 
 W, H = 720, 960
-N_FRAMES = 10
+N_FRAMES = 6
 
 
 def _ratio(pred, lidar):
@@ -32,7 +32,7 @@ def main():
     import torch
     from transformers import DepthProForDepthEstimation, DepthProImageProcessorFast
     free = torch.cuda.mem_get_info()[0] / 2**30 if torch.cuda.is_available() else 0
-    dev = "cpu"                          # keep the GPU for the VGGT queue (8 GB)
+    dev = "cuda" if free > 3.0 else "cpu"     # run after the VGGT queue so the GPU is free
     _ = free
     dtype = torch.float16 if dev == "cuda" else torch.float32
     proc = DepthProImageProcessorFast.from_pretrained(ROOT / "weights" / "depth-pro")
