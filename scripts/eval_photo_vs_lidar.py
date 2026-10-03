@@ -32,18 +32,8 @@ def _top_wall_ranges(room, k=4):
     return [(w["length"]["lo"], w["length"]["hi"]) for w in ws]
 
 
-def main():
-    out = Path(sys.argv[1])
-    ref = json.loads((out / "lidar" / "plan.json").read_text())
-    photo_path = out / "photo" / "plan.json"
-    if photo_path.exists() and "--rerun" not in sys.argv:
-        plan = json.loads(photo_path.read_text())
-    else:
-        plan = run_photos(out / "rooms", out / "photo")
-        validate(plan)
-        photo_path.parent.mkdir(parents=True, exist_ok=True)
-        photo_path.write_text(json.dumps(plan, indent=2))
-        render(plan, out / "photo" / "plan")
+def evaluate(ref, plan):
+    """Per-room rows and whole-property summary of a photo plan against the LiDAR reference plan."""
     lid = {r["id"]: r for r in ref["rooms"]}
     rows, covered, n_cov, wall_err, wall_in = [], 0, 0, [], []
     for r in plan["rooms"]:
@@ -86,6 +76,22 @@ def main():
                "median_top_wall_err_pct": round(float(np.median(wall_err)) * 100, 1) if wall_err else None,
                "runtime_s": plan["meta"]["runtime_s"]}
     summary["footprint_err_pct"] = round((summary["footprint_photo_m2"] / summary["footprint_lidar_m2"] - 1) * 100, 1)
+    return rows, summary
+
+
+def main():
+    out = Path(sys.argv[1])
+    ref = json.loads((out / "lidar" / "plan.json").read_text())
+    photo_path = out / "photo" / "plan.json"
+    if photo_path.exists() and "--rerun" not in sys.argv:
+        plan = json.loads(photo_path.read_text())
+    else:
+        plan = run_photos(out / "rooms", out / "photo")
+        validate(plan)
+        photo_path.parent.mkdir(parents=True, exist_ok=True)
+        photo_path.write_text(json.dumps(plan, indent=2))
+        render(plan, out / "photo" / "plan")
+    rows, summary = evaluate(ref, plan)
     (out / "eval.json").write_text(json.dumps({"rooms": rows, "summary": summary}, indent=2))
     print(f"{'room':>8} {'photo m2':>9} {'lidar m2':>9} {'err %':>7} {'in range':>9}  top-wall err %")
     for x in rows:

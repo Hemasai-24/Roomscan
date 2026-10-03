@@ -19,22 +19,8 @@ from roomscan.pipeline import run_lidar                        # noqa: E402
 from roomscan.video_pipeline import run_video                  # noqa: E402
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("capture", type=Path)
-    ap.add_argument("--rotate", type=int, default=90)
-    a = ap.parse_args()
-    name = a.capture.parent.name
-    out = Path("outputs/eval_video") / name
-    plans = {}
-    for tier in ("lidar", "video"):
-        d = out / tier
-        d.mkdir(parents=True, exist_ok=True)
-        p = run_lidar(a.capture) if tier == "lidar" else run_video(a.capture / "rgb.mp4", d, rotate=a.rotate)
-        (d / "plan.json").write_text(json.dumps(p, indent=2))
-        render(p, d / "plan")
-        plans[tier] = p
-    L, V = plans["lidar"], plans["video"]
+def evaluate(L, V, name):
+    """Video plan V vs LiDAR reference plan L: (summary, matched wall rows)."""
     R2, t = align_partial(L, V)
     pairs = match_walls(V, L, np.linalg.inv(R2), -t @ np.linalg.inv(R2).T, max_mid=0.4)
     vw = {w["id"]: w for r in V["rooms"] for w in r["walls"]}
@@ -57,6 +43,26 @@ def main():
                "within_3pct_ge_1m": sum(abs(r["err_pct"]) <= 3 for r in long_rows),
                "lidar_inside_video_range": f"{sum(r['lidar_inside_video_range'] for r in rows)}/{len(rows)}",
                "video_footprint_iou_with_lidar": iou, "video_meta": V["meta"].get("video"), "walls": rows}
+    return summary, rows
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("capture", type=Path)
+    ap.add_argument("--rotate", type=int, default=90)
+    a = ap.parse_args()
+    name = a.capture.parent.name
+    out = Path("outputs/eval_video") / name
+    plans = {}
+    for tier in ("lidar", "video"):
+        d = out / tier
+        d.mkdir(parents=True, exist_ok=True)
+        p = run_lidar(a.capture) if tier == "lidar" else run_video(a.capture / "rgb.mp4", d, rotate=a.rotate)
+        (d / "plan.json").write_text(json.dumps(p, indent=2))
+        render(p, d / "plan")
+        plans[tier] = p
+    L, V = plans["lidar"], plans["video"]
+    summary, rows = evaluate(L, V, name)
     (out.parent / f"{name}.json").write_text(json.dumps(summary, indent=2))
     print(f"{'video wall':>12} {'lidar wall':>12} {'video m':>8} {'lidar m':>8} {'err %':>6} in-range")
     for r in sorted(rows, key=lambda r: -r["lidar_m"]):

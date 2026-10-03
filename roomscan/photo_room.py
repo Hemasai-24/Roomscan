@@ -13,7 +13,7 @@ from roomscan.load_capture import load_stray
 from roomscan.measurements import measure_room
 from roomscan.pipeline import camera_path
 from roomscan.point_cloud import estimate_normals, fuse_points
-from roomscan.room_outline import manhattan_angle, outline_from_mask, to_plan
+from roomscan.room_outline import Grid, _wall_lines, manhattan_angle, outline_from_mask, to_plan
 from roomscan.room_surfaces import surfaces_for_room
 from roomscan.split_rooms import split_rooms
 from roomscan.video_capture import estimate_up, level, refine_up, write_capture
@@ -116,7 +116,37 @@ def _fallback(pts, cams, angle, room_id, warnings):
     return _rect_room(float(u0), float(v0), float(u1), float(v1), room_id, warnings)
 
 
-def measure_photo_room(cap_dir, room_id, tier="photo"):
+def wall_box(walls, cams, angle):
+    """Experimental room extent: on each side of the cameras (in the room's main wall directions) take the
+    best-supported fitted wall plane. Returns (u0, v0, u1, v1) in plan coordinates, or None if a side has no
+    wall. Fitted planes average thousands of points, unlike the edge of the floor the photos happened to see."""
+    c = to_plan(np.asarray(cams, float), angle).mean(0)
+    lines = _wall_lines(walls, angle)
+    out = []
+    for axis, k in (("u", 0), ("v", 1)):
+        side = []
+        for below in (True, False):
+            cand = [l for l in lines if l[0] == axis and ((l[1] < c[k]) if below else (l[1] > c[k]))]
+            if not cand:
+                return None
+            side.append(max(cand, key=lambda l: l[4])[1])
+        out.append(side)
+    (u0, u1), (v0, v1) = out
+    return float(u0), float(v0), float(u1), float(v1)
+
+
+def _box_mask(box, cell=0.05, pad=0.5):
+    u0, v0, u1, v1 = box
+    lo = np.array([u0 - pad, v0 - pad])
+    W, H = int((u1 - u0 + 2 * pad) / cell) + 1, int((v1 - v0 + 2 * pad) / cell) + 1
+    g = Grid(lo, cell, (H, W))
+    m = np.zeros((H, W), bool)
+    a, b = g.cells(np.array([[u0, v0], [u1, v1]]))
+    m[a[1]:b[1], a[0]:b[0]] = True
+    return m, g
+
+
+def measure_photo_room(cap_dir, room_id, tier="photo", extent="floor"):
     cap = load_stray(cap_dir)
     cams = np.array([f.T_wc[:3, 3] for f in cap.frames])
     fwd = np.array([f.T_wc[:3, :3] @ np.array([0.0, 0.0, 1.0]) for f in cap.frames])
@@ -129,13 +159,17 @@ def measure_photo_room(cap_dir, room_id, tier="photo"):
         classes = _classes(planes, pts, cams, warnings)
         angle = manhattan_angle(classes["walls"])
         out["angle"] = angle
-        masks, grid = split_rooms(classes, angle, extra_free=camera_path(cap, angle))
-        cq = to_plan(cams, angle)
-        ij = grid.cells(cq)
-        hit = [m for m in masks if any(0 <= x < m.shape[1] and 0 <= y < m.shape[0] and m[y, x] for x, y in ij)]
-        if not hit:
-            raise CaptureError("cameras are not inside any recovered floor region")
-        mask = np.logical_or.reduce(hit)
+        box = wall_box(classes["walls"], cams, angle) if extent == "walls" else None
+        if box is not None:
+            mask, grid = _box_mask(box)
+        else:
+            masks, grid = split_rooms(classes, angle, extra_free=camera_path(cap, angle))
+            cq = to_plan(cams, angle)
+            ij = grid.cells(cq)
+            hit = [m for m in masks if any(0 <= x < m.shape[1] and 0 <= y < m.shape[0] and m[y, x] for x, y in ij)]
+            if not hit:
+                raise CaptureError("cameras are not inside any recovered floor region")
+            mask = np.logical_or.reduce(hit)
         s = surfaces_for_room(classes, mask, grid, angle)
         if s["ceiling"] is not None and s["ceiling"].height - s["floor"].height > MAX_PHOTO_CEILING:
             warnings.append(f"ceiling reading {s['ceiling'].height - s['floor'].height:.2f} m is implausible "
