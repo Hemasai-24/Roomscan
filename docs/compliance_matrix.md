@@ -3,7 +3,7 @@
 Each row is one requirement from the brief. Status is **Met**, **Gap** (met, with the gap stated) or
 **Not met** (with the reason). Numbers come from `docs/benchmark_report.md`.
 
-**Summary:** 28 met, 8 with a gap, 5 not met. Four of the five are accuracy gates (openings, ceiling height,
+**Summary:** 30 met, 6 with a gap, 5 not met. Four of the five are accuracy gates (openings, ceiling height,
 repeatability, wall lengths). The fifth is the comparison with a consumer app, which needed a LiDAR iPhone.
 
 ## Part 1: Capture and input tiers
@@ -22,7 +22,7 @@ repeatability, wall lengths). The fifth is the comparison with a consumer app, w
 | # | Requirement | Where | Evidence | Status |
 |---|---|---|---|---|
 | 2.1 | Per room: walls, ceiling, area, openings | `roomscan/room_outline.py`, `room_surfaces.py`, `visual_openings.py` | every room record has all four | Met |
-| 2.2 | Stitched plan with correct adjacency | `roomscan/split_rooms.py`, `stitch_rooms.py` | our home: 3 of 3 door connections, no overlap | Gap: the bathroom is placed beside the bedroom; it is really beside the kitchen |
+| 2.2 | Stitched plan with correct adjacency | `roomscan/split_rooms.py`, `stitch_rooms.py` | our home: 3 of 3 door connections, rooms in the right order, no overlap | Met |
 | 2.3 | Damage regions with class and size | `roomscan/damage_*.py` | class, surface and size in metres | Gap: the staged stain was in one photo only and is dropped |
 | 2.4 | Concealed-damage flags naming the rule | `roomscan/damage_rules.py` | rules R1-R5 | Met |
 | 2.5 | Repair items keyed to surfaces | `roomscan/repair_scope.py` | surface, action, quantity with range | Met |
@@ -49,7 +49,7 @@ repeatability, wall lengths). The fifth is the comparison with a consumer app, w
 | 2.16 | Ceiling height within 1.5 cm | ceilings not in our photos or videos; wide ranges | Not met |
 | 2.17 | Same room twice within 1 cm per wall | video 0 of 3 walls; LiDAR sample 0 of 14 | Not met |
 | 2.18 | Drift method and on/off comparison | technical report section 5 | Met |
-| 2.19 | Photo stitch: adjacency, no overlap, footprint ±8 % | 3 of 3 door connections, no overlap, +6 % | Gap: bathroom placed beside the bedroom instead of the kitchen |
+| 2.19 | Photo stitch: adjacency, no overlap, footprint ±8 % | 3 of 3 door connections, right order, no overlap, +6 % | Met |
 | 2.20 | Wall lengths: photo ±8 %, video ±3 % | photo 2 of 16 walls; video rooms −31 % to +92 % | Not met |
 | 2.21 | Ranges contain the truth | 4 of 4 areas, 15 of 16 walls; ranges are wide | Met |
 

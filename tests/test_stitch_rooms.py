@@ -138,3 +138,32 @@ def test_conflicting_placement_pushed_apart():
                                 (0, 2): {"matches": 40, "photo_i": 0, "photo_j": 0}})
     assert _overlaps(rooms) <= 0.1
     assert any("pushed" in w for w in warns)
+
+
+def test_same_photo_in_both_rooms_aligns_the_two_cameras():
+    # hall 4 x 3; the shared doorway photo was taken in the east doorway at (4.0, 2.5), looking east (+x)
+    hall = make_room("H", [(0, 0), (4, 0), (4, 3), (0, 3)])
+    # room B (2 x 2) in its own frame, turned 90 deg: the same photo sits at (1.0, 0.0) looking north (+y)
+    b = make_room("B", [(0, 0), (2, 0), (2, 2), (0, 2)])
+    infos = [info(hall, [(1, 1), (4.0, 2.5)], [(1, 0), (1, 0)]),
+             info(b, [(1.0, 0.0), (1, 1)], [(0, 1), (0, 1)])]
+    links = {(0, 1): {"matches": 800, "photo_i": 1, "photo_j": 0, "same_photo": True}}
+    rooms, adj, _ = stitch(infos, links)
+    # B is turned -90 deg so its camera lands on the hall's camera, looking the same way:
+    # B's corner (0, 0) -> (4.0, 3.5) and (2, 2) -> (6.0, 1.5); no push needed
+    np.testing.assert_allclose(rooms[1]["polygon"][0], [4.0, 3.5], atol=1e-6)
+    np.testing.assert_allclose(rooms[1]["polygon"][2], [6.0, 1.5], atol=1e-6)
+    assert len(adj) == 1
+
+
+def test_room_placed_by_shared_photo_is_slid_up_to_the_hall():
+    # same rooms, but the shared photo's position in B is 1 m off: B would float 1 m east of the hall
+    hall = make_room("H", [(0, 0), (4, 0), (4, 3), (0, 3)])
+    b = make_room("B", [(0, 0), (2, 0), (2, 2), (0, 2)])
+    infos = [info(hall, [(1, 1), (4.0, 2.5)], [(1, 0), (1, 0)]),
+             info(b, [(1.0, -1.0), (1, 1)], [(0, 1), (0, 1)])]
+    links = {(0, 1): {"matches": 800, "photo_i": 1, "photo_j": 0, "same_photo": True}}
+    rooms, _, _ = stitch(infos, links)
+    gap = Polygon(rooms[0]["polygon"]).distance(Polygon(rooms[1]["polygon"]))
+    assert abs(gap - 0.15) < 0.03
+    assert _overlaps(rooms) < 1e-6

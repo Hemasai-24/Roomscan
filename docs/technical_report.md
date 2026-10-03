@@ -24,7 +24,9 @@ planes ── floor / ceiling / walls ── rooms ── outlines, openings, ce
 - Video: picks sharp frames, estimates poses and depth with VGGT-1B in chunks of 20 frames (to fit an 8 GB
   GPU), and sets the metric scale with Depth Anything V2 Metric-Indoor.
 - Photos: the same models, run on one room folder at a time, with the focal length taken from EXIF. Rooms are
-  joined where the same doorway photo appears in both rooms' folders.
+  joined with the doorway photo that appears in both rooms' folders: that photo was taken from one spot, so
+  the room is turned and moved until the photo's camera is at the same place in both rooms, and then slid
+  up against the hall wall.
 
 **Back end**
 1. Fit planes with RANSAC and label them floor, ceiling or wall.
@@ -129,8 +131,6 @@ still fail. Details: `docs/fix_loop.md`.
 ## 8. Known failure modes
 
 - **Room shape from a few photos** is the main photo-tier error (per room −21 % to +42 %).
-- **Room arrangement** in the photo tier comes only from doorway photos. On our home the bathroom was placed
-  beside the bedroom instead of the kitchen.
 - **Video poses** break up on long walks, so only the longest consistent piece is used.
 - **Mirrors and glass** flip video poses and can look like openings.
 - **Shiny floors** fool the damage detector, so floors only report mould.

@@ -101,11 +101,29 @@ def _doors(info, k):
     return ds
 
 
+def same_photo_pose(info_i, ki, info_j, kj):
+    """(R2, t) moving room j so that photo kj lands on photo ki, looking the same way. Used when the very same
+    photo is in both rooms' folders: it was taken from one spot, so its camera must coincide in both rooms."""
+    fi, fj = _unit(info_i["forward_plan"][ki]), _unit(info_j["forward_plan"][kj])
+    ang = np.arctan2(fi[1], fi[0]) - np.arctan2(fj[1], fj[0])
+    R = np.array([[np.cos(ang), -np.sin(ang)], [np.sin(ang), np.cos(ang)]])
+    return R, np.asarray(info_i["cameras_plan"][ki], float) - R @ np.asarray(info_j["cameras_plan"][kj], float)
+
+
 def _candidates(infos, rooms, placed_idx, i, j, link, used):
     """All (score, j, R, t, door_i, door_j) for attaching unplaced room j to placed room i."""
     ki, kj = (link["photo_i"], link["photo_j"]) if i < j else (link["photo_j"], link["photo_i"])
     cos_lim = np.cos(np.radians(AIM_MAX_DEG))
     out = []
+    if link.get("same_photo"):
+        # strongest evidence: the shared photo's camera is one point in both rooms
+        R, t = same_photo_pose(infos[i], ki, infos[j], kj)
+        cand = transform_room(infos[j]["room"], R, t)
+        ov = _overlap(cand, [rooms[p] for p in placed_idx])
+        cam = {"id": f"{infos[j]['room']['id']}_shared_photo", "mid": np.asarray(infos[i]["cameras_plan"][ki], float),
+               "normal_out": _unit(infos[i]["forward_plan"][ki]), "width": VIRTUAL_DOOR_WIDTH, "virtual": True}
+        out.append((np.log1p(link["matches"]) + 3.0 - 2 * ov, R, t, cam, cam, ov))
+        return out
     for da in _doors(infos[i], ki):
         if da["id"] in used:
             continue
@@ -138,6 +156,24 @@ def resolve_overlap(room, placed, normal):
         k += 1
 
 
+def slide_to(room, target, placed, gap=WALL_THICKNESS):
+    """Move room straight towards `target` until they are `gap` apart, stopping early if it would overlap a
+    placed room. A shared photo fixes a room's turn well but its position only to about a metre."""
+    from shapely.ops import nearest_points
+    p, q = nearest_points(_poly(room), _poly(target))
+    d = p.distance(q)
+    if d <= gap + PUSH_STEP:
+        return room, 0.0
+    u = _unit([q.x - p.x, q.y - p.y])
+    moved, done = room, 0.0
+    for dist in list(np.arange(PUSH_STEP, d - gap, PUSH_STEP)) + [d - gap]:
+        nxt = transform_room(room, np.eye(2), u * dist)
+        if _overlap(nxt, placed) > MAX_OVERLAP:
+            break
+        moved, done = nxt, float(dist)
+    return moved, done
+
+
 def stitch(infos, links):
     """infos: per room {"room", "cameras_plan", "forward_plan"} in the room's own plan coordinates;
     links: {(i, j): {"matches", "photo_i", "photo_j"}} with i < j. Returns (rooms, adjacency, warnings)."""
@@ -168,6 +204,10 @@ def stitch(infos, links):
         if ov > MAX_OVERLAP:
             room, pushed = resolve_overlap(room, [rooms[p] for p in placed], _unit(da["normal_out"]))
             warnings.append(f"{room['id']}: pushed {pushed:.2f} m away from {rooms[a]['id']} to avoid overlap")
+        elif l.get("same_photo"):
+            room, slid = slide_to(room, rooms[a], [rooms[p] for p in placed])
+            if slid > 0:
+                warnings.append(f"{room['id']}: moved {slid:.2f} m towards {rooms[a]['id']} to close the gap")
         rooms[b] = room
         placed.append(b)
         # a detected door joins exactly two rooms; a virtual door is only "the wall this photo looks at",

@@ -52,6 +52,10 @@ def room_links(images_by_room, min_matches=25):
                     m = _inliers(fa, fb, matcher)
                     if m > best[0]:
                         best = (m, p, q)
+            same = [(p, q) for p, a in enumerate(images_by_room[i]) for q, b in enumerate(images_by_room[j])
+                    if a.shape == b.shape and np.array_equal(a, b)]
+            if same:                                   # the protocol's doorway photo, copied into both folders
+                best = (best[0], *same[0])
             if best[0] >= min_matches:
-                links[(i, j)] = {"matches": best[0], "photo_i": best[1], "photo_j": best[2]}
+                links[(i, j)] = {"matches": best[0], "photo_i": best[1], "photo_j": best[2], "same_photo": bool(same)}
     return links
