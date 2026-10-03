@@ -19,6 +19,10 @@ VGGT_COMMIT = "a288dd0f14786c93483e45524328726ab7b1b4ce"  # pinned: the commit e
 VGGT_WEIGHTS = ("facebook/VGGT-1B", "model.pt")
 # Depth Anything V2, metric indoor (metres) - used only to fix VGGT's unknown scale.
 DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Metric-Indoor-Large-hf"
+# Damage: Grounding DINO (open-vocabulary boxes from text) + SAM2.1 small (exact outline inside each box).
+GDINO_MODEL = "IDEA-Research/grounding-dino-base"
+SAM2_MODEL = "facebook/sam2.1-hiera-small"
+HF_PATTERNS = ["*.json", "*.safetensors", "*.txt", "*.md"]
 
 
 def main():
@@ -29,6 +33,8 @@ def main():
         subprocess.run(["git", "-C", str(THIRD / "vggt"), "checkout", "-q", VGGT_COMMIT], check=True)
     print(hf_hub_download(*VGGT_WEIGHTS, local_dir=WEIGHTS / "vggt-1b"))
     print(snapshot_download(DEPTH_MODEL, local_dir=WEIGHTS / "da2-metric-indoor-large"))
+    print(snapshot_download(GDINO_MODEL, local_dir=WEIGHTS / "gdino-base", allow_patterns=HF_PATTERNS))
+    print(snapshot_download(SAM2_MODEL, local_dir=WEIGHTS / "sam2.1-small", allow_patterns=HF_PATTERNS))
 
 
 if __name__ == "__main__":

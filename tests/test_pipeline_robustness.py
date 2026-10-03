@@ -35,7 +35,7 @@ def test_one_failing_room_is_skipped_with_warning(monkeypatch):
         return real(*args, **kw)
 
     monkeypatch.setattr(pipeline, "outline_from_mask", flaky)
-    rooms, kept, warnings = pipeline.measure_rooms(c, masks, g, a, rays=[], tier="lidar")
+    rooms, kept, geoms, warnings = pipeline.measure_rooms(c, masks, g, a, rays=[], tier="lidar")
     assert len(rooms) == 1 and len(kept) == 1
     assert any("skipped" in w for w in warnings)
 

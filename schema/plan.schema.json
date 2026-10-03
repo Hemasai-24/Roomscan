@@ -2,38 +2,287 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Floor plan capture result",
   "type": "object",
-  "required": ["schema_version", "capture", "rooms", "adjacency", "damage",
-               "concealed_damage_flags", "scope_items", "warnings"],
+  "required": [
+    "schema_version",
+    "capture",
+    "rooms",
+    "adjacency",
+    "damage",
+    "concealed_damage_flags",
+    "scope_items",
+    "warnings"
+  ],
   "$defs": {
-    "measure": {"type": "object", "required": ["value", "lo", "hi", "unit"],
-                "properties": {"value": {"type": "number"}, "lo": {"type": "number"},
-                               "hi": {"type": "number"}, "unit": {"enum": ["m", "m2"]}}},
-    "point": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2}
+    "measure": {
+      "type": "object",
+      "required": [
+        "value",
+        "lo",
+        "hi",
+        "unit"
+      ],
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "lo": {
+          "type": "number"
+        },
+        "hi": {
+          "type": "number"
+        },
+        "unit": {
+          "enum": [
+            "m",
+            "m2"
+          ]
+        }
+      }
+    },
+    "point": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "quantity": {
+      "type": "object",
+      "required": [
+        "value",
+        "lo",
+        "hi",
+        "unit"
+      ],
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "lo": {
+          "type": "number"
+        },
+        "hi": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        }
+      }
+    }
   },
   "properties": {
-    "schema_version": {"const": "1.0"},
-    "capture": {"type": "object", "required": ["id", "tier"],
-                "properties": {"id": {"type": "string"}, "tier": {"enum": ["lidar", "video", "photo"]}}},
-    "rooms": {"type": "array", "items": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "capture": {
       "type": "object",
-      "required": ["id", "polygon", "walls", "floor_area", "ceiling_height", "ceiling_observed", "openings"],
+      "required": [
+        "id",
+        "tier"
+      ],
       "properties": {
-        "polygon": {"type": "array", "items": {"$ref": "#/$defs/point"}, "minItems": 3},
-        "walls": {"type": "array", "items": {"type": "object",
-          "required": ["id", "surface_id", "start", "end", "length"],
-          "properties": {"length": {"$ref": "#/$defs/measure"}}}},
-        "floor_area": {"$ref": "#/$defs/measure"},
-        "ceiling_height": {"$ref": "#/$defs/measure"},
-        "ceiling_observed": {"type": "boolean"},
-        "openings": {"type": "array", "items": {"type": "object",
-          "required": ["id", "wall_id", "type", "width"],
-          "properties": {"type": {"enum": ["door", "window", "opening"]},
-                         "width": {"$ref": "#/$defs/measure"}}}}
-      }}},
-    "adjacency": {"type": "array"},
-    "damage": {"type": "array"},
-    "concealed_damage_flags": {"type": "array"},
-    "scope_items": {"type": "array"},
-    "warnings": {"type": "array", "items": {"type": "string"}}
+        "id": {
+          "type": "string"
+        },
+        "tier": {
+          "enum": [
+            "lidar",
+            "video",
+            "photo"
+          ]
+        }
+      }
+    },
+    "rooms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "polygon",
+          "walls",
+          "floor_area",
+          "ceiling_height",
+          "ceiling_observed",
+          "openings"
+        ],
+        "properties": {
+          "polygon": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/point"
+            },
+            "minItems": 3
+          },
+          "walls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "surface_id",
+                "start",
+                "end",
+                "length"
+              ],
+              "properties": {
+                "length": {
+                  "$ref": "#/$defs/measure"
+                }
+              }
+            }
+          },
+          "floor_area": {
+            "$ref": "#/$defs/measure"
+          },
+          "ceiling_height": {
+            "$ref": "#/$defs/measure"
+          },
+          "ceiling_observed": {
+            "type": "boolean"
+          },
+          "openings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "wall_id",
+                "type",
+                "width"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "door",
+                    "window",
+                    "opening"
+                  ]
+                },
+                "width": {
+                  "$ref": "#/$defs/measure"
+                }
+              }
+            }
+          },
+          "floor_level": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "adjacency": {
+      "type": "array"
+    },
+    "damage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "class",
+          "surface_id",
+          "room_id",
+          "area",
+          "width",
+          "height",
+          "bottom_above_floor",
+          "n_views",
+          "score",
+          "near_opening"
+        ],
+        "properties": {
+          "class": {
+            "enum": [
+              "water_stain",
+              "crack",
+              "mold",
+              "peeling_paint",
+              "hole"
+            ]
+          },
+          "area": {
+            "$ref": "#/$defs/measure"
+          },
+          "width": {
+            "$ref": "#/$defs/measure"
+          },
+          "height": {
+            "$ref": "#/$defs/measure"
+          },
+          "bottom_above_floor": {
+            "$ref": "#/$defs/measure"
+          },
+          "n_views": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "near_opening": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "concealed_damage_flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "description",
+          "severity",
+          "damage_ids",
+          "surface_ids"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "damage_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "surface_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "scope_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "surface_id",
+          "action",
+          "quantity",
+          "unit",
+          "reason"
+        ],
+        "properties": {
+          "quantity": {
+            "$ref": "#/$defs/quantity"
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
   }
 }

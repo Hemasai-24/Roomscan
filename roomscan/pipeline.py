@@ -61,7 +61,24 @@ def camera_path(cap, angle, step=0.05):
     return to_plan(np.concatenate(seg) if seg else c, angle)
 
 
-def run_lidar(capture_dir, drift_correction=False, tier="lidar", stride=5, capture_id=None, walkable_path=False):
+def add_damage(plan, cap, capture_dir, geoms, tier, detect=None):
+    """geoms: [(room_id, surfaces_dict, edges, verts, angle)] -> plan damage, flags and scope filled in."""
+    from roomscan.damage_pipeline import (annotate, damage_for_capture, filter_damage, finish_plan, free_gpu,
+                                          room_surface_list)
+    t0 = time.time()
+    free_gpu()
+    surfaces = [x for rid, s, edges, verts, angle in geoms for x in room_surface_list(rid, s, edges, angle, verts)]
+    measured = damage_for_capture(cap, capture_dir, surfaces, tier, detect=detect)
+    found = filter_damage(measured, tier)
+    annotate(found, {r["id"]: r for r in plan["rooms"]}, {g[0]: g[4] for g in geoms})
+    finish_plan(plan, found)
+    plan["meta"]["damage_candidates"] = len(measured)       # on a surface, before the views/class filters
+    plan["meta"]["damage_s"] = round(time.time() - t0, 1)
+    return plan
+
+
+def run_lidar(capture_dir, drift_correction=False, tier="lidar", stride=5, capture_id=None, walkable_path=False,
+              damage=False, detect=None):
     t0 = time.time()
     cap = load_stray(capture_dir)
     drift = None
@@ -73,7 +90,7 @@ def run_lidar(capture_dir, drift_correction=False, tier="lidar", stride=5, captu
     angle = manhattan_angle(classes["walls"])
     masks, grid = split_rooms(classes, angle, extra_free=camera_path(cap, angle) if walkable_path else None)
     rays = list(capture_rays(cap, stride=stride))
-    rooms, masks, room_warnings = measure_rooms(classes, masks, grid, angle, rays, tier)
+    rooms, masks, geoms, room_warnings = measure_rooms(classes, masks, grid, angle, rays, tier)
     meta = {"n_frames": len(cap.frames), "n_points": int(len(pts)), "n_rooms": len(rooms),
             "manhattan_angle_rad": round(angle, 6), "drift_correction": drift_correction,
             "runtime_s": round(time.time() - t0, 1)}
@@ -81,13 +98,16 @@ def run_lidar(capture_dir, drift_correction=False, tier="lidar", stride=5, captu
         meta["drift"] = drift
     plan = build_plan(capture_id or Path(capture_dir).resolve().name, tier, rooms, meta, adjacency(rooms, masks, grid))
     plan["warnings"] = room_warnings + plan["warnings"]
+    if damage:
+        add_damage(plan, cap, capture_dir, geoms, tier, detect=detect)
     return plan
 
 
 def measure_rooms(classes, masks, grid, angle, rays, tier):
     """Measure every room on its own; a room whose geometry fails is skipped with a warning (one bad room
-    must not lose the whole capture). No room at all is a CaptureError."""
-    rooms, kept, warnings = [], [], []
+    must not lose the whole capture). No room at all is a CaptureError.
+    Returns rooms, their masks, per-room geometry for damage (id, surfaces, edges, verts, angle), warnings."""
+    rooms, kept, geoms, warnings = [], [], [], []
     for k, m in enumerate(masks):
         rid = f"room_{k}"
         try:
@@ -95,13 +115,17 @@ def measure_rooms(classes, masks, grid, angle, rays, tier):
             verts, edges = outline_from_mask(m, grid, s["walls"], angle)
             wall_h = (s["ceiling"].height if s["ceiling"] else s["floor"].height + 2.6) - s["floor"].height
             ops = find_openings(rays, edges, angle, s["floor"].height, wall_h)
-            rooms.append(measure_room(s, verts, edges, angle, ops, tier=tier, room_id=rid))
-            kept.append(m)
+            room = measure_room(s, verts, edges, angle, ops, tier=tier, room_id=rid)
         except (ValueError, IndexError, CaptureError) as e:
             warnings.append(f"{rid}: skipped, its outline could not be measured ({e})")
+            continue
+        room["floor_level"] = round(float(s["floor"].height - classes["floor"].height), 4)
+        rooms.append(room)
+        kept.append(m)
+        geoms.append((rid, s, edges, verts, angle))
     if not rooms:
         raise CaptureError("no room found: walk into each room and keep the floor and walls in view")
-    return rooms, kept, warnings
+    return rooms, kept, geoms, warnings
 
 
 run_lidar_single = run_lidar

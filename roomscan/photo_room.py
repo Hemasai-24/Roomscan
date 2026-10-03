@@ -44,12 +44,12 @@ def photos_to_capture(images, fx_exif, out_dir, runner, metric, bias):
     depth = [d * scale for d in r["depth"]]
     conf = _confidence_maps(r["conf"])
     T = level(T, estimate_up(T))
-    write_capture(out_dir, depth, conf, T, K, fps=1.0)
+    write_capture(out_dir, depth, conf, T, K, fps=1.0, images=images)
     pts = fuse_points(load_stray(out_dir), stride=1, max_depth=MAX_DEPTH)
     up = refine_up(pts, estimate_normals(pts), np.array([0.0, 1.0, 0.0]))
     if np.degrees(np.arccos(np.clip(up[1], -1, 1))) > 0.3:
         T = level(T, up)
-        write_capture(out_dir, depth, conf, T, K, fps=1.0)
+        write_capture(out_dir, depth, conf, T, K, fps=1.0, images=images)
     return out_dir, {"n_photos": len(T), "focal_px": round(float(K[0, 0]), 1), "focal_source": source,
                      "metric_scale": round(float(scale), 5), "metric_scale_spread": round(float(spread), 4)}
 
@@ -146,7 +146,10 @@ def measure_photo_room(cap_dir, room_id, tier="photo"):
         ops = find_openings(capture_rays(cap, stride=1, max_depth=MAX_DEPTH), edges, angle, s["floor"].height,
                             wall_h)
         room = measure_room(s, verts, edges, angle, ops, tier=tier, room_id=room_id)
+        room["floor_level"] = None          # each photo room has its own frame: levels not comparable
         room["warnings"] = warnings + room["warnings"]
+        out["geometry"] = {"s": s, "edges": edges, "verts": verts, "angle": angle}
+        out["cap_dir"] = cap_dir
     except (CaptureError, ValueError) as e:
         warnings.append(f"geometry failed: {e}")
         room = _fallback(pts, cams, out["angle"], room_id, warnings)

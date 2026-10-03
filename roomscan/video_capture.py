@@ -45,10 +45,17 @@ def level(T_wc, up):
     return [G @ T for T in T_wc]
 
 
-def write_capture(root, depths_m, confs, T_wc, K, fps=2.0):
+def write_capture(root, depths_m, confs, T_wc, K, fps=2.0, images=None):
+    """Stray-layout capture. `images` (RGB uint8, same orientation as the depth) are kept as rgb/*.jpg so
+    later steps (damage detection) can see the colour frames."""
     root = Path(root)
     (root / "depth").mkdir(parents=True, exist_ok=True)
     (root / "confidence").mkdir(exist_ok=True)
+    if images is not None:
+        (root / "rgb").mkdir(exist_ok=True)
+        for i, im in enumerate(images):
+            cv2.imwrite(str(root / "rgb" / f"{i:06d}.jpg"), cv2.cvtColor(np.asarray(im, np.uint8), cv2.COLOR_RGB2BGR),
+                        [cv2.IMWRITE_JPEG_QUALITY, 92])
     h, w = depths_m[0].shape
     s = NOMINAL_RGB_WIDTH / w
     np.savetxt(root / "camera_matrix.csv", np.diag([s, s, 1.0]) @ K, delimiter=", ", fmt="%.6f")

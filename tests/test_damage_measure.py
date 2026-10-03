@@ -55,6 +55,35 @@ def test_same_damage_in_two_views_merges():
     assert len(d) == 1 and d[0]["n_views"] == 2
 
 
+def test_collinear_walls_of_two_rooms_use_their_extents():
+    # both rooms have a wall on the plane z = 2; room A spans x in [-1, 0], room B x in [0, 1]
+    a = dict(WALL_A, surface_id="room_0_w0", room_id="room_0",
+             extent={"angle": 0.0, "axis": "v", "lo": -1.0, "hi": 0.0})
+    b = dict(WALL_A, surface_id="room_1_w2", room_id="room_1",
+             extent={"angle": 0.0, "axis": "v", "lo": 0.0, "hi": 1.0})
+    depth = np.full((H, W), 2.0)
+    d = measure_damage([_view(depth, _mask(150, 178, 96, 116))], [a, b], tier="lidar")   # x = 0.22 .. 0.5
+    assert [x["surface_id"] for x in d] == ["room_1_w2"]
+
+
+def test_stain_across_two_coplanar_outline_edges_stays_one_region():
+    # one physical wall z = 2 cut into two outline edges (jagged outline): x in [-1, -0.05] and [-0.05, 1]
+    a = dict(WALL_A, surface_id="room_0_w3", extent={"angle": 0.0, "axis": "v", "lo": -1.0, "hi": -0.05})
+    b = dict(WALL_A, surface_id="room_0_w4", extent={"angle": 0.0, "axis": "v", "lo": -0.05, "hi": 1.0})
+    depth = np.full((H, W), 2.0)
+    d = measure_damage([_view(depth, _mask(113, 143, 96, 116))], [a, b], tier="lidar")   # x = -0.15 .. 0.15
+    assert len(d) == 1 and d[0]["surface_id"] == "room_0_w4"          # the edge holding most of it
+    assert d[0]["area"]["value"] == pytest.approx(0.06, rel=0.1)
+
+
+def test_floor_damage_outside_room_polygon_is_dropped():
+    floor = {"surface_id": "room_0_floor", "room_id": "room_0", "kind": "floor",
+             "normal": np.array([0.0, 0.0, -1.0]), "d": 2.0, "floor_h": 0.0,
+             "extent": {"angle": 0.0, "polygon": [[-3, -3], [-2, -3], [-2, -2], [-3, -2]]}}
+    depth = np.full((H, W), 2.0)
+    assert measure_damage([_view(depth, _mask(113, 143, 96, 116))], [floor], tier="lidar") == []
+
+
 def test_photo_tier_ranges_wider_than_lidar():
     depth = np.full((H, W), 2.0)
     v = [_view(depth, _mask(113, 143, 96, 116))]

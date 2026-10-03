@@ -17,7 +17,7 @@ def test_empty_plan_validates():
 @pytest.mark.sample
 def test_run_single_room_end_to_end(tmp_path):
     need_sample()
-    r = subprocess.run([sys.executable, str(ROOT / "run.py"), str(SINGLE_ROOM), "--out", str(tmp_path)],
+    r = subprocess.run([sys.executable, str(ROOT / "run.py"), str(SINGLE_ROOM), "--out", str(tmp_path), "--no-damage"],
                        capture_output=True, text=True, timeout=600)
     assert r.returncode == 0, r.stderr
     plan = json.loads((tmp_path / "plan.json").read_text())
@@ -35,7 +35,7 @@ def test_deterministic_output(tmp_path):
     outs = []
     for k in range(2):
         d = tmp_path / str(k)
-        subprocess.run([sys.executable, str(ROOT / "run.py"), str(SINGLE_ROOM), "--out", str(d)], check=True,
+        subprocess.run([sys.executable, str(ROOT / "run.py"), str(SINGLE_ROOM), "--out", str(d), "--no-damage"], check=True,
                        capture_output=True, timeout=600)
         p = json.loads((d / "plan.json").read_text())
         p["meta"].pop("runtime_s", None)

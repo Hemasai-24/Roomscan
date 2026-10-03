@@ -61,7 +61,18 @@ def _model_reconstruct():
     return reconstruct
 
 
-def run_photos(path, out_dir, reconstruct=None):
+def _room_damage(m, detect):
+    """Damage for one photo room, measured in that room's own frame (before stitching moves it)."""
+    from roomscan.damage_pipeline import annotate, damage_for_capture, filter_damage, room_surface_list
+    from roomscan.load_capture import load_stray
+    g, rid = m["geometry"], m["room"]["id"]
+    surfaces = room_surface_list(rid, g["s"], g["edges"], g["angle"], g["verts"])
+    found = filter_damage(damage_for_capture(load_stray(m["cap_dir"]), m["cap_dir"], surfaces, "photo",
+                                             detect=detect), "photo")
+    return annotate(found, {rid: m["room"]}, {rid: g["angle"]})
+
+
+def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None):
     t0 = time.time()
     path, out_dir = Path(path), Path(out_dir)
     folders = room_folders(path)
@@ -94,6 +105,16 @@ def run_photos(path, out_dir, reconstruct=None):
         per_room[rid] = info
     if not infos:
         raise CaptureError("no room could be reconstructed from the photos")
+    found, t_dmg = [], time.time()
+    if damage:
+        from roomscan.damage_pipeline import free_gpu
+        reconstruct = None                          # drop the 3D models before loading the damage models
+        free_gpu()
+        for m in infos:
+            if "geometry" in m:
+                found += _room_damage(m, detect)
+            else:
+                warnings.append(f"{m['room']['id']}: no fitted surfaces (fallback room) - damage not checked")
     links = room_links(images)
     rooms, adjacency, stitch_warnings = stitch(infos, links)
     meta = {"n_rooms": len(rooms), "rooms": per_room,
@@ -102,4 +123,8 @@ def run_photos(path, out_dir, reconstruct=None):
             "runtime_s": round(time.time() - t0, 1)}
     plan = build_plan(path.name, "photo", rooms, meta, adjacency)
     plan["warnings"] = warnings + stitch_warnings + plan["warnings"]
+    if damage:
+        from roomscan.damage_pipeline import finish_plan
+        finish_plan(plan, found)
+        plan["meta"]["damage_s"] = round(time.time() - t_dmg, 1)
     return plan
