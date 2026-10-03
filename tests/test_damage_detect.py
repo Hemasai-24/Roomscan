@@ -61,3 +61,13 @@ def test_upright_turns_from_camera_pose(k):
     T = np.eye(4)
     T[:3, :3] = np.array(ROWS[k], float)        # second row = world up in camera coordinates
     assert upright_turns(T) == k
+
+
+def test_owlv2_phrases_map_to_damage_classes():
+    from roomscan.damage_detect import OWL_PHRASES, label_to_class
+    assert {label_to_class(p) for p in OWL_PHRASES} == {"crack", "water_stain", "mold", "peeling_paint", "hole"}
+
+
+def test_each_detector_has_its_own_threshold():
+    from roomscan.damage_detect import DETECTORS, THRESHOLDS
+    assert set(THRESHOLDS) == set(DETECTORS) and THRESHOLDS["owlv2+sam2"] < THRESHOLDS["gdino+sam2"]

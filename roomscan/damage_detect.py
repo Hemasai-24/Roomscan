@@ -3,13 +3,14 @@
 Behind a small registry so another detector (e.g. OWLv2) can be swapped in. The post-processing
 (score threshold, label -> class, size limits, de-duplication, clipping the mask to its box) is plain code
 and tested without a GPU."""
+import os
 from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-CLASSES = {"water stain": "water_stain", "peeling paint": "peeling_paint", "crack": "crack",
-           "mold": "mold", "hole": "hole"}
+CLASSES = {"water stain": "water_stain", "water damage": "water_stain", "peeling paint": "peeling_paint",
+           "crack": "crack", "mold": "mold", "hole": "hole"}
 PROMPT = "water stain. crack. mold. peeling paint. hole."
 THRESHOLD = 0.35
 MIN_FRAC = 0.0005       # mask smaller than this share of the image: noise
@@ -121,7 +122,48 @@ class GDinoSam2:
         self.torch.cuda.empty_cache()
 
 
-DETECTORS = {"gdino+sam2": GDinoSam2}
+OWL_PHRASES = ["a crack in a wall", "a water stain", "water damage", "mold", "peeling paint", "a hole in a wall"]
+
+
+class Owlv2Sam2(GDinoSam2):
+    """OWLv2 (base, ensemble) boxes from text phrases, then SAM2.1 masks (same SAM as GDinoSam2)."""
+
+    def __init__(self, root=ROOT, device="cuda"):
+        import torch
+        from transformers import Owlv2ForObjectDetection, Owlv2Processor, Sam2Model, Sam2Processor
+        self.torch, self.device = torch, device
+        w = Path(root) / "weights"
+        self.op = Owlv2Processor.from_pretrained(w / "owlv2-base")
+        self.om = Owlv2ForObjectDetection.from_pretrained(w / "owlv2-base").to(device).eval()
+        self.sp = Sam2Processor.from_pretrained(w / "sam2.1-small")
+        self.sm = Sam2Model.from_pretrained(w / "sam2.1-small").to(device).eval()
+        self.gm = self.om                         # so close() frees it
+
+    def __call__(self, image, box_threshold=0.1):
+        torch = self.torch
+        h, w = image.shape[:2]
+        with torch.no_grad():
+            inp = self.op(text=[OWL_PHRASES], images=image, return_tensors="pt").to(self.device)
+            out = self.om(**inp)
+            side = max(h, w)                      # OWLv2 pads to a square
+            res = self.op.post_process_object_detection(out, threshold=box_threshold,
+                                                        target_sizes=torch.tensor([[side, side]]).to(self.device))[0]
+            boxes = [[max(0.0, b[0]), max(0.0, b[1]), min(float(w), b[2]), min(float(h), b[3])]
+                     for b in res["boxes"].tolist()]
+            if not boxes:
+                return []
+            si = self.sp(images=image, input_boxes=[boxes], return_tensors="pt").to(self.device)
+            so = self.sm(**si)
+            masks = self.sp.post_process_masks(so.pred_masks.cpu(), si["original_sizes"])[0]
+            best = so.iou_scores[0].argmax(-1).cpu()
+        return [{"label": OWL_PHRASES[int(l)], "score": float(sc), "box": tuple(b),
+                 "mask": masks[i, int(best[i])].numpy().astype(bool)}
+                for i, (l, sc, b) in enumerate(zip(res["labels"].tolist(), res["scores"].tolist(), boxes))]
+
+
+DETECTORS = {"gdino+sam2": GDinoSam2, "owlv2+sam2": Owlv2Sam2}
+THRESHOLDS = {"gdino+sam2": THRESHOLD, "owlv2+sam2": 0.2}   # OWLv2 scores run lower
+DAMAGE_DETECTOR = os.environ.get("ROOMSCAN_DAMAGE_DETECTOR", "gdino+sam2")
 _LOADED = {}
 
 
@@ -137,8 +179,10 @@ def release_detectors():
     _LOADED.clear()
 
 
-def detect_damage(image_rgb, detector="gdino+sam2", threshold=THRESHOLD, root=ROOT):
+def detect_damage(image_rgb, detector=None, threshold=None, root=ROOT):
     """image_rgb: upright uint8 (H,W,3) -> [{"class", "score", "mask", "box"}]."""
+    detector = detector or DAMAGE_DETECTOR
+    threshold = THRESHOLDS[detector] if threshold is None else threshold
     return postprocess(get_detector(detector, root)(np.ascontiguousarray(image_rgb)), image_rgb.shape, threshold)
 
 

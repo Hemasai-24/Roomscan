@@ -35,6 +35,9 @@ def main():
     print(snapshot_download(DEPTH_MODEL, local_dir=WEIGHTS / "da2-metric-indoor-large"))
     print(snapshot_download(GDINO_MODEL, local_dir=WEIGHTS / "gdino-base", allow_patterns=HF_PATTERNS))
     print(snapshot_download(SAM2_MODEL, local_dir=WEIGHTS / "sam2.1-small", allow_patterns=HF_PATTERNS))
+    # OWLv2 (Google, Apache-2.0): alternative damage detector, ROOMSCAN_DAMAGE_DETECTOR=owlv2+sam2
+    print(snapshot_download("google/owlv2-base-patch16-ensemble", local_dir=WEIGHTS / "owlv2-base",
+                            allow_patterns=HF_PATTERNS))
 
 
 if __name__ == "__main__":
