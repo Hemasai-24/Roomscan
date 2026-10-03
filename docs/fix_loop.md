@@ -43,8 +43,8 @@ room measurement (`roomscan/photo_room.py`); LiDAR/video unchanged.
 ## 4. Result (after the fix) — tag `fix-after`
 
 **Regenerate:** `git checkout fix-before && python run.py data/raw/m53 --out outputs/fix_loop/before_photo`, then
-`git checkout fix-after && python run.py data/raw/m53 --out outputs/fix_loop/after_photo_v2`; score with
-`outputs/fix_loop/before_after.json` (script in `docs/benchmark_report.md`). Readable diff: `docs/fix_loop.diff`
+`git checkout fix-after && python run.py data/raw/m53 --out outputs/fix_loop/after_photo_v2`; score both with
+`python scripts/score_m53.py` (writes `outputs/m53_benchmark.json`). Readable diff: `docs/fix_loop.diff`
 (`git diff fix-before..fix-after -- roomscan/photo_room.py tests/test_photo_room_clip.py`).
 
 | Room (tape) | Before | After | Predicted |
