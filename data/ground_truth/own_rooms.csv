@@ -1,32 +1,13 @@
 room,item,id,value_cm,notes
-room1,wall,W1,,
-room1,wall,W2,,
-room1,wall,W3,,
-room1,wall,W4,,
-room1,ceiling_height,C1,,spot 1
-room1,ceiling_height,C2,,spot 2
-room1,door_width,D1,,
-room1,door_height,D1,,
-room1,window_width,N1,,
-room1,window_height,N1,,
-room1,window_sill,N1,,
-room1,damage_water_stain_width,S1,,
-room1,damage_water_stain_height,S1,,
-room1,damage_crack_length,K1,,
-room2,wall,W1,,
-room2,wall,W2,,
-room2,wall,W3,,
-room2,wall,W4,,
-room2,ceiling_height,C1,,
-room2,ceiling_height,C2,,
-room2,door_width,D1,,
-room3,wall,W1,,
-room3,wall,W2,,
-room3,wall,W3,,
-room3,wall,W4,,
-room3,ceiling_height,C1,,
-room3,ceiling_height,C2,,
-room3,door_width,D1,,
-corridor,wall,W1,,
-corridor,wall,W2,,
-corridor,ceiling_height,C1,,
+bedroom,wall,W1,302,left
+bedroom,wall,W2,277,up
+bedroom,wall,W3,302,right
+bedroom,wall,W4,277,down
+bedroom,ceiling_height,C1,274,one spot
+bedroom,door_width,D1,80,
+bedroom,door_height,D1,196,
+bedroom,window_width,N1,134,assumed width
+bedroom,window_height,N1,132,assumed height
+bedroom,damage_stain_width,S1,9,
+bedroom,damage_stain_height,S1,6,
+bedroom,damage_crack_length,K1,8,bounding box 8 x 5 cm
