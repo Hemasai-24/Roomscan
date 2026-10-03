@@ -74,5 +74,5 @@ head-to-head against a consumer app, which needed a LiDAR iPhone that was not av
 | 5.6 | Raw benchmark data: sensor logs, ground truth, app exports | `data/DATA_URL`, `data/ground_truth/` | Photos, videos, tape notes | Met |
 | 5.7 | Mirrors, glass, wet-look surfaces and low light covered | `docs/TRADEOFFS.md`, bathroom low-light clip | Each named with its measured effect; not solved | Met with a gap |
 | 5.8 | Weights fetched by script; nothing calls our own infrastructure | `scripts/fetch_weights.py` | All models run locally | Met |
-| 5.9 | Pretrained models and datasets disclosed | `docs/technical_report.md` §8, `docs/TRADEOFFS.md` | Names, versions, licences | Met |
+| 5.9 | Pretrained models and datasets disclosed | `docs/technical_report.md` §9, `docs/TRADEOFFS.md` | Names, versions, licences | Met |
 | 5.10 | Trade-offs and limitations listed (requested by the hiring team) | `docs/TRADEOFFS.md` | Assumptions, constraints, every experiment that did not work, with numbers | Met |
