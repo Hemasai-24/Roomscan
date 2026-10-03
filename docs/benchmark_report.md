@@ -92,12 +92,14 @@ ranges are wide.
 
 | Capture | Rooms | Connections | Runtime |
 |---|---|---|---|
-| single_room | 2 | 1 | 20 s |
-| floor_only | 13 | 9 | 56 s |
-| with_ceiling | 9 | 3 | 82 s |
+| single_room | 2 | 1 | 16 s |
+| floor_only | 11 | 6 | 36 s |
+| with_ceiling | 9 | 3 | 57 s |
 
-- Repeatability: the two whole-floor scans are of the same flat. 0 of 14 matched walls agree within 1 cm.
-- Ceilings observed in with_ceiling: 2.34-3.21 m.
+- Repeatability: the two whole-floor scans are of the same flat. 1 of 47 matched walls agrees within 1 cm.
+- A corridor narrowed by a cupboard is no longer cut into pieces: floor_only went from 13 to 11 rooms, with_ceiling
+  stays at 9. Our home's photo-tier numbers are unchanged.
+- Ceilings observed in with_ceiling: 8 of 9 rooms, 2.19-3.06 m.
 - Damage false alarms on the undamaged flat: 0, 2 and 3 regions.
 - Drift ablation: see section 5 of the technical report.
 
@@ -120,7 +122,7 @@ Laptop with an RTX 2000 Ada (8 GB) and 20 CPU threads.
 
 | Run | Time |
 |---|---|
-| LiDAR, one room / whole floor | 20 s / 56-82 s, plus about 80 s for damage |
+| LiDAR, one room / whole floor | 16 s / 36-57 s, plus about 80 s for damage |
 | Photo, 4 rooms, 24 photos and 4 door photos, with damage | 142 s |
 | Video, 68 s walkthrough | 35 s back end plus 102 s damage; VGGT takes 5.4 s per 20 frames |
 | Full reproduction, CPU part | about 17 min |

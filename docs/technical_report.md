@@ -18,7 +18,7 @@ room shapes and windows are not, and doors are 3-10 cm too wide (see section 8 a
 
 ![LiDAR tier on the sample flat](images/lidar_floor_plan.png)
 
-*Figure 2. LiDAR tier on the provided sample flat. The flat is split into 13 pieces, more than its real rooms,
+*Figure 2. LiDAR tier on the provided sample flat. The flat is split into 11 pieces, more than its real rooms,
 because furniture and short wall gaps break rooms apart. There is no ground truth for this flat.*
 
 ```
@@ -72,7 +72,9 @@ one page (`docs/capture_protocol.md`). Measured accuracy per tier is in `docs/de
 - **Plane fitting.** Plain RANSAC found fake "floors" at every height, because a horizontal plane cuts through
   every wall in a thin band. Requiring each point's surface normal to agree with the plane removed them and
   raised the wall count from 3 to 32 on the sample.
-- **Room splitting.** Only tall obstacles split rooms, so kitchen counters and beds do not. Small rooms closed
+- **Room splitting.** Only tall obstacles split rooms, so kitchen counters and beds do not. A corridor narrowed by
+  a cupboard is kept as one room: two narrow pieces that touch along most of their width are merged, while a
+  door, which is narrower than the spaces it joins, still separates rooms. Small rooms closed
   by walls, such as a toilet, are kept.
 - **Openings.** A wall is only called open where a depth ray passed through it. A wall that was never seen is
   not an opening.

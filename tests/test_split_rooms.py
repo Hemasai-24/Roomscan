@@ -73,3 +73,35 @@ def test_narrow_corridor_between_rooms_is_its_own_room():
     areas = sorted(m.sum() * g.cell ** 2 for m in rooms)
     assert len(rooms) == 3
     np.testing.assert_allclose(areas, [2.7, 9.0, 9.0], rtol=0.2)
+
+
+def test_corridor_pinched_by_a_wall_stub_stays_one_room():
+    # a 1.15 m corridor narrowed to 0.9 m over 0.3 m (a cupboard or pillar): still one space, not two rooms
+    fp = [(0, 0), (6, 0), (6, 1.15), (3.15, 1.15), (3.15, 0.9), (2.85, 0.9), (2.85, 1.15), (0, 1.15)]
+    rooms, g = _split(room_points(fp, 2.5))
+    assert len(rooms) == 1
+
+
+
+def _box(shape, r0, r1, c0, c1):
+    m = np.zeros(shape, bool)
+    m[r0:r1, c0:c1] = True
+    return m
+
+
+def test_corridor_merge_keeps_a_wc_behind_a_narrow_door():
+    from roomscan.split_rooms import _merge_corridor
+    shape, cell = (140, 60), 0.05
+    # widths as split_rooms sees them, before the wall band is given back (about 0.2 m less than real)
+    corridor = _box(shape, 0, 120, 0, 18)                          # 0.9 m wide, 6 m long
+    wc = _box(shape, 40, 64, 19, 34)                               # 0.75 m wide, 1.2 m deep, 1 cell gap (watershed line)
+    wc[:, 19] = False
+    wc[44:56, 19] = True                                           # touches the corridor along 0.6 m only (the door)
+    assert len(_merge_corridor([corridor, wc], cell)) == 2
+
+
+def test_corridor_merge_joins_two_segments_of_one_corridor():
+    from roomscan.split_rooms import _merge_corridor
+    shape, cell = (140, 60), 0.05
+    a, b = _box(shape, 0, 60, 0, 18), _box(shape, 61, 120, 0, 18)  # one corridor (0.9 m before the wall band) cut in two
+    assert len(_merge_corridor([a, b], cell)) == 1

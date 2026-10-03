@@ -56,6 +56,7 @@ def split_rooms(classes, angle, cell=0.05, core=0.45, min_area=1.0, small_area=0
     cv2.watershed(cv2.cvtColor(free * 255, cv2.COLOR_GRAY2BGR), markers)
     rooms = [(markers == k) & (free > 0) for k in range(1, n)]
     rooms = _merge_open(rooms, merge_len, cell)
+    rooms = _merge_corridor(rooms, cell)
     rooms = _grow_to_walls([_fill_holes(m) for m in rooms], grow=2)
     keep = []
     for m in rooms:
@@ -83,6 +84,51 @@ def _grow_to_walls(rooms, grow):
         taken |= g
         out.append(g)
     return out
+
+
+CORRIDOR_WIDTH = 1.1      # m: a piece narrower than this (widest inscribed circle, before the wall band is given back) is corridor-like
+CORRIDOR_JOIN = 0.7       # two corridor-like pieces touching along this share of the wider one's width are one space
+
+
+def _width(mask, cell):
+    padded = np.pad(mask.astype(np.uint8), 1)              # the grid edge counts as outside the piece
+    return cv2.distanceTransform(padded, cv2.DIST_L2, 5).max() * cell * 2
+
+
+def _contact_length(band, cell):
+    """Length of the strip where two pieces touch: the long side of its tightest rotated box."""
+    ys, xs = np.nonzero(band)
+    if len(xs) < 3:
+        return 0.0
+    (_, _), (w, h), _ = cv2.minAreaRect(np.c_[xs, ys].astype(np.float32))
+    return (max(w, h) + 1) * cell
+
+
+def _merge_corridor(rooms, cell):
+    """A corridor narrowed by a cupboard or pillar is cut by the watershed into segments that meet along their
+    full width. A real door is narrower than the spaces it joins (a WC door is much narrower than the corridor it
+    opens onto), so two pieces are merged only when both are corridor-narrow and they touch along most of the
+    wider one's width."""
+    k = np.ones((5, 5), np.uint8)
+    merged = True
+    while merged:
+        merged = False
+        widths = [_width(m, cell) for m in rooms]
+        for i in range(len(rooms)):
+            if widths[i] >= CORRIDOR_WIDTH:
+                continue
+            grown = cv2.dilate(rooms[i].astype(np.uint8), k) > 0
+            for j in range(i + 1, len(rooms)):
+                if widths[j] >= CORRIDOR_WIDTH:
+                    continue
+                if _contact_length(grown & rooms[j], cell) >= CORRIDOR_JOIN * max(widths[i], widths[j]):
+                    rooms[i] = rooms[i] | rooms[j]
+                    del rooms[j]
+                    merged = True
+                    break
+            if merged:
+                break
+    return rooms
 
 
 def _merge_open(rooms, merge_len, cell):
