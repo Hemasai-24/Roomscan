@@ -1,5 +1,8 @@
 # Own benchmark capture — Samsung Galaxy M53 + tape (≈ 75 min)
 
+*This is the capture **plan**. What was actually captured (3 rooms + hall, 24 photos, clips of 68/21/14/9 s,
+staged stain 9 × 6 cm and crack 8 cm) is listed in `docs/benchmark_report.md`.*
+
 Our only real ground truth. Follow in order.
 
 ## 1. Phone settings (5 min) — Camera app → gear icon

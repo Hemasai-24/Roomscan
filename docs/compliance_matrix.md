@@ -7,7 +7,7 @@ As of 2026-10-03 16:00; updated as work lands.
 | Requirement | File / path | Artifact | Status |
 |---|---|---|---|
 | Capture route (Route 2: stock app + one-page protocol) | `docs/capture_protocol.md` | protocol page | done (not tested on an iPhone by us) |
-| Photo tier: 2-8 stills/room, per-room folders → stitched plan | `roomscan/photo_*.py`, `stitch_rooms.py`, `run.py` | plan.json + plan.png | partial (stitched, no overlaps; ±8% not met: median wall error 28% on simulated photos) |
+| Photo tier: 2-8 stills/room, per-room folders → stitched plan | `roomscan/photo_*.py`, `stitch_rooms.py`, `run.py` | plan.json + plan.png | partial (own home: footprint +7.5 %, walls 2/16 within ±8 %; sample-sim after fix: median wall error 38.7 %) |
 | Video tier: handheld clip | `roomscan/video_*.py`, `run.py` | plan.json + plan.png | partial (runs; accuracy gate not met) |
 | LiDAR tier: depth, poses, intrinsics | `roomscan/load_capture.py` … `pipeline.py`, `run.py` | plan.json + plan.png | done |
 | Same output contract from each tier, intervals widen as data thins | `schema/plan.schema.json`, `roomscan/measurements.py` (TIER tables) | schema-valid JSON | done (all three tiers) |
@@ -17,7 +17,7 @@ As of 2026-10-03 16:00; updated as work lands.
 | Requirement | File / path | Artifact | Status |
 |---|---|---|---|
 | Per-room plan: walls, ceiling height, floor area, openings | `roomscan/room_outline.py`, `room_surfaces.py`, `find_doors_windows.py`, `measurements.py` | `rooms[]` in plan.json | done (outline quality partial) |
-| Stitched multi-room plan, correct adjacency | `roomscan/split_rooms.py`, `connect_rooms.py`, `stitch_rooms.py` | `adjacency[]`, plan.png | partial (all tiers; photo adjacency precision 0.33-0.50 vs LiDAR) |
+| Stitched multi-room plan, correct adjacency | `roomscan/split_rooms.py`, `connect_rooms.py`, `stitch_rooms.py` | `adjacency[]`, plan.png | partial (all tiers; photo adjacency on own home 1/3; sample-sim precision 0.67 / recall 0.44) |
 | Per-surface damage regions, class + metric extent | `roomscan/damage_detect.py`, `damage_measure.py`, `damage_pipeline.py` | `damage[]` | partial (staged stain found, crack missed, 12 false alarms on photos) |
 | Concealed-damage flags with the rule that fired | `roomscan/damage_rules.py` (R1-R5) | `concealed_damage_flags[]` | done (wired in all tiers; fires on false alarms too) |
 | Scope line items keyed to surfaces | `roomscan/repair_scope.py` | `scope_items[]` | done |
@@ -26,7 +26,7 @@ As of 2026-10-03 16:00; updated as work lands.
 | JSON to the published schema | `schema/plan.schema.json`, `roomscan/save_plan.py` | validated on every run | done |
 | Rendered plan | `roomscan/draw_plan.py` | plan.svg / plan.png | done |
 | Benchmark set (multi-room+connector, damage room, all 3 tiers, repeat capture, tape GT) | `docs/benchmark_capture.md`, `data/ground_truth/`, `data/DATA_URL` | raw data + GT | partial (own home: 3 rooms + hall, staged damage, photo + video, bedroom twice, tape; no LiDAR tier — no LiDAR phone) |
-| Gate: opening widths ≤ 2 cm on ≥ 85% | `scripts/score_m53.py`, `roomscan/score_benchmark.py` | `docs/benchmark_report.md` | fail (photo: 0 of 9) |
+| Gate: opening widths ≤ 2 cm on ≥ 85% | `scripts/score_m53.py`, `roomscan/score_benchmark.py` | `docs/benchmark_report.md` | fail (photo: 1 of 9; 6 phantoms) |
 | Gate: ceiling height ≤ 1.5 cm; repeat spread ≤ 1 cm | `roomscan/measurements.py` | `docs/benchmark_report.md` | fail (ceilings not seen in photos/video; honest flagged ranges) |
 | Gate: repeatability ≤ 1 cm / 0.5% per wall | `scripts/repeatability.py`, `roomscan/compare_plans.py`, `scripts/score_m53.py` | `docs/benchmark_report.md` | fail (LiDAR sample 0/14; video bedroom ×2: 0/3) |
 | Gate: drift accountability + on/off ablation | `roomscan/drift_correction.py`, `scripts/drift_ablation.py` | ablation table + plans | partial (method + ablation exist; no measurable gain on real sample) |

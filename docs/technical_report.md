@@ -114,7 +114,7 @@ seen through doorways (room boxes 1.2-2.5× too big while scale explained ≤ 1.
 +32 %). **Fix:** bound each room by its own walls. **v1** (nearest tall wall from the cameras' centre) fixed the
 small rooms but over-cut the large ones (−65 % / −82 %): few photos produce several copies of one wall up to
 0.6 m apart, some between the room's own cameras. **v2:** a bounding wall must lie beyond the outermost
-cameras (one outlier ignored). **After:** footprint **+7.5 %** (inside ±8 %), kitchen +42 %, bathroom +27 %;
+cameras (one outlier ignored). **After:** footprint **+7.5 %** (inside ±8 %, but per-room errors partly cancel: summed absolute error ≈ 19 %), kitchen +42 %, bathroom +27 %;
 wall-length gate and adjacency still fail. Predicted: footprint within ±15 % (met), small rooms within ±25 %
 (missed). Held-out check on the sample is confounded (the LiDAR reference changed); no clean evidence that v2
 generalises.
@@ -130,8 +130,8 @@ generalises.
 - **Jagged outlines:** furniture along walls makes floor edges ragged → many short wall segments; repeatability
   across two scans of the flat fails (0/14 walls within 1 cm).
 - **Thin cracks** are often missed; a stain across an inside corner is reported per wall.
-- **Video:** only the most consistent piece of a long walk is used; **photo:** wall error median 28 % on
-  simulated photos.
+- **Video:** only the most consistent piece of a long walk is used; **photo:** room areas −21 % … +42 % on our
+  own home; median wall error 28 % (before the fix loop) / 38.7 % (after) on simulated sample photos.
 
 ## 8. Models and data used (disclosure)
 VGGT-1B (Meta; non-commercial research licence), Depth Anything V2 Metric-Indoor-Large (CC-BY-NC-4.0),

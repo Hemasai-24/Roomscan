@@ -1,0 +1,266 @@
+{
+ "truth_areas_m2": {
+  "bedroom": 8.37,
+  "hall": 15.56,
+  "kitchen": 2.86,
+  "bathroom": 2.87
+ },
+ "photo_before_fix": {
+  "rooms": {
+   "bedroom": {
+    "area": 6.62,
+    "truth": 8.37,
+    "err_pct": -20.9,
+    "in_range": true,
+    "range": [
+     0.0,
+     17.7983
+    ]
+   },
+   "hall": {
+    "area": 18.54,
+    "truth": 15.56,
+    "err_pct": 19.2,
+    "in_range": true,
+    "range": [
+     0.0,
+     49.7723
+    ]
+   },
+   "kitchen": {
+    "area": 7.01,
+    "truth": 2.86,
+    "err_pct": 145.2,
+    "in_range": true,
+    "range": [
+     0.0,
+     18.8228
+    ]
+   },
+   "bathroom": {
+    "area": 6.42,
+    "truth": 2.87,
+    "err_pct": 123.4,
+    "in_range": true,
+    "range": [
+     0.0,
+     17.2537
+    ]
+   }
+  },
+  "total": 38.58,
+  "total_truth": 29.65,
+  "total_err_pct": 30.1,
+  "score": {
+   "tier": "photo",
+   "walls": {
+    "n": 16,
+    "max_abs_err_m": 1.9066000000000005,
+    "mean_abs_err_m": 0.6967062500000001,
+    "within_gate": 2,
+    "coverage": 1.0,
+    "count_mismatch_rooms": [
+     "bedroom",
+     "hall",
+     "kitchen",
+     "bathroom"
+    ]
+   },
+   "ceiling": {
+    "n": 4,
+    "abs_err_m": 1.0500999999999996,
+    "coverage": 1.0
+   },
+   "openings": {
+    "n_truth": 9,
+    "within_2cm": 0,
+    "missed": 7,
+    "phantom": 5,
+    "rate": 0.0
+   },
+   "gates": {
+    "wall_lengths": false,
+    "opening_widths": false,
+    "ceiling_height": false
+   }
+  },
+  "adjacency": [
+   [
+    "Room2_hall",
+    "Room3_kitchen"
+   ]
+  ],
+  "unplaced": 2,
+  "damage": 16,
+  "runtime_s": 111.3
+ },
+ "photo_after_fix": {
+  "rooms": {
+   "bedroom": {
+    "area": 6.62,
+    "truth": 8.37,
+    "err_pct": -20.9,
+    "in_range": true,
+    "range": [
+     0.0,
+     17.7983
+    ]
+   },
+   "hall": {
+    "area": 17.53,
+    "truth": 15.56,
+    "err_pct": 12.7,
+    "in_range": true,
+    "range": [
+     0.0,
+     47.0819
+    ]
+   },
+   "kitchen": {
+    "area": 4.07,
+    "truth": 2.86,
+    "err_pct": 42.4,
+    "in_range": true,
+    "range": [
+     0.0,
+     10.9276
+    ]
+   },
+   "bathroom": {
+    "area": 3.65,
+    "truth": 2.87,
+    "err_pct": 27.0,
+    "in_range": true,
+    "range": [
+     0.0,
+     9.8105
+    ]
+   }
+  },
+  "total": 31.87,
+  "total_truth": 29.65,
+  "total_err_pct": 7.5,
+  "score": {
+   "tier": "photo",
+   "walls": {
+    "n": 16,
+    "max_abs_err_m": 1.9066000000000005,
+    "mean_abs_err_m": 0.7369812500000001,
+    "within_gate": 2,
+    "coverage": 1.0,
+    "count_mismatch_rooms": [
+     "bedroom",
+     "hall"
+    ]
+   },
+   "ceiling": {
+    "n": 4,
+    "abs_err_m": 1.0500999999999996,
+    "coverage": 1.0
+   },
+   "openings": {
+    "n_truth": 9,
+    "within_2cm": 1,
+    "missed": 8,
+    "phantom": 6,
+    "rate": 0.06666666666666667
+   },
+   "gates": {
+    "wall_lengths": false,
+    "opening_widths": false,
+    "ceiling_height": false
+   }
+  },
+  "adjacency": [
+   [
+    "Room2_hall",
+    "Room3_kitchen"
+   ]
+  ],
+  "unplaced": 2,
+  "damage": 13,
+  "runtime_s": 109.3
+ },
+ "video": {
+  "walkthrough": {
+   "rooms": [
+    [
+     "room_0",
+     20.29
+    ],
+    [
+     "room_1",
+     0.78
+    ]
+   ],
+   "total": 21.07,
+   "ceiling_lower_bounds": [
+    1.24,
+    1.04
+   ],
+   "damage": 13,
+   "runtime_s": 35.3
+  },
+  "bedroom_take1": {
+   "rooms": [
+    [
+     "room_0",
+     5.76
+    ]
+   ],
+   "total": 5.76,
+   "ceiling_lower_bounds": [
+    0.8
+   ],
+   "damage": 0,
+   "runtime_s": 6.3
+  },
+  "bedroom_take2": {
+   "rooms": [
+    [
+     "room_0",
+     3.55
+    ],
+    [
+     "room_1",
+     3.68
+    ],
+    [
+     "room_2",
+     1.85
+    ]
+   ],
+   "total": 9.08,
+   "ceiling_lower_bounds": [
+    0.95,
+    0.87,
+    0.8
+   ],
+   "damage": 3,
+   "runtime_s": 13.3
+  },
+  "bathroom_lowlight": {
+   "rooms": [
+    [
+     "room_0",
+     5.5
+    ]
+   ],
+   "total": 5.5,
+   "ceiling_lower_bounds": [
+    0.78
+   ],
+   "damage": 1,
+   "runtime_s": 3.9
+  },
+  "repeatability_bedroom": {
+   "walls_matched": 3,
+   "within_gate": 0,
+   "diffs_cm": [
+    61.3,
+    98.8,
+    113.3
+   ]
+  }
+ }
+}

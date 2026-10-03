@@ -1,0 +1,295 @@
+{
+  "rooms": [
+    {
+      "room": "room_0",
+      "photo_area": 1.77,
+      "range": [
+        0.0,
+        4.8942
+      ],
+      "lidar_area": 5.3,
+      "area_err_pct": -66.7,
+      "lidar_in_range": false,
+      "top_wall_err_pct": [
+        56,
+        7,
+        11,
+        7
+      ],
+      "warnings": [
+        "room_0: not connected to the other rooms (no photo shows it from another room); drawn beside the plan",
+        "room_0: ceiling not observed: height is at least 1.21 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_1",
+      "photo_area": 4.05,
+      "range": [
+        0.0,
+        10.9221
+      ],
+      "lidar_area": 4.07,
+      "area_err_pct": -0.5,
+      "lidar_in_range": true,
+      "top_wall_err_pct": [
+        57,
+        78,
+        10,
+        2
+      ],
+      "warnings": [
+        "room_1: pushed 2.50 m away from room_6 to avoid overlap",
+        "room_1: floor not seen in the photos: assumed 1.4 m below the camera",
+        "room_1: floor beyond the room's own walls removed (0.8 m2 seen through doorways)",
+        "room_1: ceiling not observed: height is at least 1.66 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_10",
+      "photo_area": 2.5,
+      "range": [
+        0.0,
+        6.7172
+      ],
+      "lidar_area": 4.37,
+      "area_err_pct": -42.8,
+      "lidar_in_range": true,
+      "top_wall_err_pct": [
+        9,
+        44,
+        37,
+        2
+      ],
+      "warnings": [
+        "room_10: not connected to the other rooms (no photo shows it from another room); drawn beside the plan",
+        "room_10: floor beyond the room's own walls removed (0.9 m2 seen through doorways)",
+        "room_10: ceiling not observed: height is at least 2.12 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_2",
+      "photo_area": 4.53,
+      "range": [
+        0.0,
+        12.1792
+      ],
+      "lidar_area": 9.71,
+      "area_err_pct": -53.4,
+      "lidar_in_range": true,
+      "top_wall_err_pct": [
+        28,
+        42,
+        54,
+        5
+      ],
+      "warnings": [
+        "room_2: pushed 1.30 m away from room_7 to avoid overlap",
+        "room_2: floor beyond the room's own walls removed (2.2 m2 seen through doorways)",
+        "room_2: ceiling not observed: height is at least 1.76 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_3",
+      "photo_area": 4.32,
+      "range": [
+        0.0,
+        11.6835
+      ],
+      "lidar_area": 2.34,
+      "area_err_pct": 84.9,
+      "lidar_in_range": true,
+      "top_wall_err_pct": [
+        49,
+        8,
+        47,
+        5
+      ],
+      "warnings": [
+        "room_3: floor beyond the room's own walls removed (0.2 m2 seen through doorways)",
+        "room_3: ceiling not observed: height is at least 1.98 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_4",
+      "photo_area": 1.31,
+      "range": [
+        0.0,
+        3.5301
+      ],
+      "lidar_area": 0.83,
+      "area_err_pct": 57.1,
+      "lidar_in_range": true,
+      "top_wall_err_pct": [
+        49,
+        49,
+        5,
+        5
+      ],
+      "warnings": [
+        "room_4: ceiling not observed: height is at least 1.79 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_5",
+      "photo_area": 2.24,
+      "range": [
+        0.0,
+        6.0296
+      ],
+      "lidar_area": 2.1,
+      "area_err_pct": 6.8,
+      "lidar_in_range": true,
+      "top_wall_err_pct": [
+        20,
+        32,
+        46,
+        20
+      ],
+      "warnings": [
+        "room_5: ceiling not observed: height is at least 1.73 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_6",
+      "photo_area": 4.84,
+      "range": [
+        0.0,
+        12.999
+      ],
+      "lidar_area": 1.64,
+      "area_err_pct": 196.0,
+      "lidar_in_range": true,
+      "top_wall_err_pct": [
+        138,
+        289,
+        40,
+        94
+      ],
+      "warnings": [
+        "room_6: ceiling not observed: height is at least 2.27 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_7",
+      "photo_area": 4.76,
+      "range": [
+        0.0,
+        12.7979
+      ],
+      "lidar_area": 1.42,
+      "area_err_pct": 236.1,
+      "lidar_in_range": true,
+      "top_wall_err_pct": [
+        96,
+        60,
+        64,
+        28
+      ],
+      "warnings": [
+        "room_7: pushed 1.55 m away from room_4 to avoid overlap",
+        "room_7: ceiling not observed: height is at least 1.61 m (highest wall point)"
+      ]
+    },
+    {
+      "room": "room_8",
+      "photo_area": 1.53,
+      "range": [
+        0.0,
+        4.1308
+      ],
+      "lidar_area": 4.41,
+      "area_err_pct": -65.4,
+      "lidar_in_range": false,
+      "top_wall_err_pct": [
+        11,
+        14,
+        52,
+        45
+      ],
+      "warnings": [
+        "room_8: not connected to the other rooms (no photo shows it from another room); drawn beside the plan",
+        "room_8: floor beyond the room's own walls removed (0.5 m2 seen through doorways)",
+        "room_8: ceiling not observed: height is at least 1.76 m (highest wall point)"
+      ]
+    }
+  ],
+  "summary": {
+    "rooms_photo": 10,
+    "rooms_lidar": 13,
+    "footprint_photo_m2": 31.83,
+    "footprint_lidar_m2": 36.17,
+    "footprint_iou_after_alignment": 0.198,
+    "adjacency_found": [
+      [
+        "room_1",
+        "room_6"
+      ],
+      [
+        "room_2",
+        "room_7"
+      ],
+      [
+        "room_3",
+        "room_4"
+      ],
+      [
+        "room_3",
+        "room_6"
+      ],
+      [
+        "room_4",
+        "room_5"
+      ],
+      [
+        "room_4",
+        "room_7"
+      ]
+    ],
+    "adjacency_lidar": [
+      [
+        "room_0",
+        "room_3"
+      ],
+      [
+        "room_1",
+        "room_6"
+      ],
+      [
+        "room_2",
+        "room_3"
+      ],
+      [
+        "room_2",
+        "room_6"
+      ],
+      [
+        "room_2",
+        "room_7"
+      ],
+      [
+        "room_3",
+        "room_4"
+      ],
+      [
+        "room_3",
+        "room_5"
+      ],
+      [
+        "room_4",
+        "room_5"
+      ],
+      [
+        "room_7",
+        "room_9"
+      ]
+    ],
+    "adjacency_precision": 0.67,
+    "adjacency_recall": 0.44,
+    "max_overlap_m2": 0.069,
+    "area_range_coverage": "8/10",
+    "wall_range_coverage": "38/40",
+    "median_top_wall_err_pct": 38.7,
+    "runtime_s": 123.3,
+    "footprint_err_pct": -12.0
+  }
+}

@@ -24,7 +24,7 @@ doorways** into the next room — the room "leaks" into its neighbours.
   bathroom **2.47× / 1.21×**. The kitchen comes out 4.4 m long; it is 1.9 m.
 - Scale explains only a small part: the highest wall points we saw (3.18 / 3.04 / 3.10 / 2.65 m) against the
   real 2.74 m ceiling put our metric scale at about **+0 % to +16 %** — not 1.2-2.5×.
-- Earlier oracle experiment (`docs/experiments/tier_accuracy.md`): with **perfect LiDAR depth and poses** for
+- Earlier oracle experiment (`docs/experiments/tier_accuracy.md` on branch `exp-tier-accuracy`): with **perfect LiDAR depth and poses** for
   the same photos, the footprint was still **+32 %** — the error is in how the room shape is built, not in the
   models.
 
@@ -43,8 +43,8 @@ room measurement (`roomscan/photo_room.py`); LiDAR/video unchanged.
 ## 4. Result (after the fix) — tag `fix-after`
 
 **Regenerate:** `git checkout fix-before && python run.py data/raw/m53 --out outputs/fix_loop/before_photo`, then
-`git checkout fix-after && python run.py data/raw/m53 --out outputs/fix_loop/after_photo_v2`; score both with
-`python scripts/score_m53.py` (writes `outputs/m53_benchmark.json`). Readable diff: `docs/fix_loop.diff`
+`git checkout fix-after && python run.py data/raw/m53 --out outputs/fix_loop/after_photo_v2`; then `git checkout dev && python scripts/score_m53.py` (the scorer was added after `fix-after`; it writes
+`outputs/m53_benchmark.json`; committed copies: `results/m53_benchmark.json`, `results/fix_loop_before_after.json`). Readable diff: `docs/fix_loop.diff`
 (`git diff fix-before..fix-after -- roomscan/photo_room.py tests/test_photo_room_clip.py`).
 
 | Room (tape) | Before | After | Predicted |
@@ -53,11 +53,11 @@ room measurement (`roomscan/photo_room.py`); LiDAR/video unchanged.
 | hall (15.56 m²) | 18.54 (+19 %) | 17.53 (+13 %) | — |
 | kitchen (2.86 m²) | 7.01 (**+145 %**) | 4.07 (**+42 %**) | within ±25 % — **missed** |
 | bathroom (2.87 m²) | 6.42 (**+123 %**) | 3.65 (**+27 %**) | within ±25 % — **missed, narrowly** |
-| **total footprint (29.66 m²)** | **38.58 (+30 %)** | **31.87 (+7.5 %)** | within ±15 % — **met** |
+| **total footprint (29.65 m²)** | **38.58 (+30 %)** | **31.87 (+7.5 %)** | within ±15 % — **met** |
 | mean wall-length error | 70 cm | 74 cm | not predicted |
 | true value inside the 95 % range | 4/4 rooms | 4/4 rooms | — |
 
-**Did the gate move from fail to pass?** Partly. The **total footprint is now inside ±8 %** (+7.5 %), but the
+**Did the gate move from fail to pass?** Partly. The total is the sum of room areas, so per-room errors partly cancel (bedroom −21 % against hall +13 %, kitchen +42 %, bathroom +27 %; summed absolute error 5.7 m² ≈ 19 %), and it is not a stitched footprint (2 of 4 rooms are drawn beside the plan). The **total footprint is now inside ±8 %** (+7.5 %), but the
 per-room wall lengths are still far outside ±8 % (mean error 74 cm; 2 of 16 walls within the gate), so the
 row "wall lengths within ±8 %" still **fails**. The photo-stitch row also still fails on adjacency (1 of 3
 connections; unchanged — not what this fix addressed).

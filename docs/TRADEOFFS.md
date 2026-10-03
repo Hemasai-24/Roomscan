@@ -14,9 +14,9 @@ brief, why, and what that does to the reported numbers. Kept up to date as work 
 | Brief requirement | What we did | Effect on the numbers |
 |---|---|---|
 | Capture route | Route 2: Stray Scanner (free; same format as the sample data) + one-page protocol | None; the protocol was not tested by us on an iPhone |
-| LiDAR-tier accuracy vs laser ground truth | Planned: ARKitScenes scenes (iPad Pro LiDAR, laser-scanned reference) | iPad Pro, not iPhone; disclosed dataset |
+| LiDAR-tier accuracy vs laser ground truth | **Not done** (ARKitScenes was considered; no time) | LiDAR tier has no accuracy number against ground truth |
 | Video and photo tiers on the sample apartment | Simulated from the sample `rgb.mp4` (video: RGB only, no depth/poses; photos: 2-8 sharp frames per room) | Video frames are sharper and more evenly spaced than a typical handheld clip; photos are video frames, not stills |
-| Our own photo/video benchmark with tape ground truth | Planned: author's rooms, Samsung Galaxy M53 main camera (1x), tape measure | Android camera instead of iPhone 15; tape ±2-3 mm, not laser |
+| Our own photo/video benchmark with tape ground truth | **Done:** author's home (3 rooms + hall), Samsung Galaxy M53 main camera (1x), tape measure | Android camera instead of iPhone 15; tape ±0.5 cm, not laser |
 | Repeatability (same room twice, same tier) | The two whole-floor sample scans of the same apartment | Different walk paths, so this is a harder test than two identical captures |
 
 ## Own benchmark (2026-10-03)
@@ -30,8 +30,8 @@ capture (see `docs/fix_loop.md`).
 ## Not done (and why)
 | Requirement | Status | Why |
 |---|---|---|
-| Staged damage room captured at all tiers | Pending | Needs a physical room + phone; Galaxy M53 attempt planned |
-| Head-to-head vs Polycam at the LiDAR tier | Pending | Needs a LiDAR iPhone |
+| Staged damage room captured at all tiers | **Partial:** captured at photo and video tiers (bedroom; stain 9 × 6 cm, crack 8 cm) | No LiDAR tier (no LiDAR phone); the staged damage is small |
+| Head-to-head vs Polycam at the LiDAR tier | **Not done** | Needs a LiDAR iPhone |
 
 ## Engineering decisions with known costs
 - **Own RANSAC instead of Open3D's.** Open3D's threaded `segment_plane` gave different planes on
@@ -46,7 +46,7 @@ capture (see `docs/fix_loop.md`).
 - **Manhattan (right-angle) room footprints.** Wall outlines are snapped to two perpendicular
   directions. Rooms with angled walls will be squared off.
 
-## Plan 2 results (LiDAR tier, sample data, 2026-10-03)
+## Plan 2 results (LiDAR tier, sample data, 2026-10-03 early morning — current numbers: `docs/benchmark_report.md` §2)
 | Check | Result | Gate |
 |---|---|---|
 | Rooms found (single_room / floor-only / with-ceiling) | 2 / 10 / 8 | - |
@@ -119,7 +119,7 @@ Per-room area error vs LiDAR ranges from -69 % to +320 %; 6 of 16 rooms are with
 
 What this means, honestly:
 - **The photo tier stitches a whole-property plan from per-room folders, with no overlaps, but its
-  dimensions do not meet the +-8 % gate.** Median wall error 28 %.
+  dimensions do not meet the +-8 % gate.** Median wall error 28 % (before the fix loop; 38.7 % after, see `docs/fix_loop.md`).
 - **Ranges are honest but very wide:** relative sigma 0.6 (from the 90th-percentile wall error, 117 %).
   Calibrated in-sample; leave-one-capture-out wall coverage 86 % and 93 %. Lower bounds clipped at 0.
 - **Causes:** 3-8 photos leave wall sections unseen, so a room "leaks" into floor seen through doors (areas

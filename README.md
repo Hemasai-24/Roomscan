@@ -6,6 +6,10 @@ interval on every measurement.
 Read [`docs/TRADEOFFS.md`](docs/TRADEOFFS.md) first: it lists the constraints this was
 built under and what they do to the reported numbers.
 
+Deliverables: [compliance matrix](docs/compliance_matrix.md) · [benchmark report](docs/benchmark_report.md) ·
+[fix loop](docs/fix_loop.md) · [technical report](docs/technical_report.md) · [capture protocol](docs/capture_protocol.md) ·
+[device matrix](docs/device_matrix.md) · raw data: `python scripts/fetch_data.py` · everything: `bash scripts/reproduce_all.sh`
+
 ## Quickstart (clean Linux machine, Python 3.10+)
     sudo apt install ffmpeg                                   # video tier decodes with ffmpeg/ffprobe
     python3 -m venv .venv
@@ -46,7 +50,8 @@ Docs: `docs/design.md` (design), `docs/plans/` (build plans), `docs/TRADEOFFS.md
 `docs/INTERVIEW_NOTES.md` (how and why, step by step), `docs/device_matrix.md`.
 
 ## Tests
-    .venv/bin/python -m pytest    # synthetic tests; sample-data tests run when sample_data/ exists
+    .venv/bin/python -m pytest -m "not model"   # CPU tests; sample-data tests run when sample_data/ exists
+    .venv/bin/python -m pytest -m model         # GPU model tests (needs weights)
 
 ## Status
 See [`docs/compliance_matrix.md`](docs/compliance_matrix.md) for every requirement and its status, and

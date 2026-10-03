@@ -114,7 +114,7 @@ their ranges are. That is how "the same output contract from each tier" is met.
   the other (feature matches through the doorway), then placed so their doors coincide, walls
   facing, one wall-thickness apart; any overlap is pushed out by the smallest move.
 - **Honest result on the simulated benchmark (photos picked from the sample video):** one
-  stitched plan, no overlaps (max 0.1 m²), but walls are off by a median **28%** vs LiDAR and
+  stitched plan, no overlaps (max 0.1 m²), but walls were off by a median **28%** vs LiDAR (before the fix loop) and
   total area **+21%**; ranges widened (σ 60%) so the LiDAR value falls inside 86-93% of the
   time when calibrated on the other capture. Gate (±8%) **not met**.
 - **Why so far off:** 2-8 photos of white walls give VGGT little to work with; the room is
@@ -131,7 +131,8 @@ their ranges are. That is how "the same output contract from each tier" is met.
 - **Fix:** cut each room at its own walls. **v1** (nearest wall) over-cut big rooms (−65 / −82 %) because few
   photos give several copies of one wall up to 0.6 m apart. **v2:** a room's own wall can't lie between two
   of its own camera positions → nearest wall beyond the outermost cameras, ignoring one outlier (a doorway
-  photo taken from the next room). **After: +7.5 %** (inside ±8 %); kitchen +42 %, bathroom +27 %.
+  photo taken from the next room). **After: +7.5 %** (inside ±8 %); kitchen +42 %, bathroom +27 %. Careful: that total is a sum of room areas —
+  errors partly cancel (summed absolute error ≈ 19 %) and 2 rooms are still not stitched.
 - **Say honestly:** v2 was refined on the same data; the held-out check on the sample is confounded; wall
   lengths and adjacency still fail; prediction for small rooms (±25 %) was missed.
 
