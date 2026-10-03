@@ -5,8 +5,8 @@
 #   bash scripts/reproduce_all.sh lidar      # only the CPU parts (LiDAR tier, drift, repeatability)
 #
 # Inputs:  sample_data/  (the provided Stray Scanner captures)
-#          data/raw/s23/ (our own captures; fetch with: python scripts/fetch_data.py)
-#          data/ground_truth/own_rooms.csv, data/ground_truth/room_map.json (tape measurements, room id mapping)
+#          data/raw/m53/ (our own captures; fetch with: python scripts/fetch_data.py)
+#          data/ground_truth/own_rooms.csv (tape measurements)
 # Outputs: outputs/repro/...  and outputs/repro/timing.tsv (wall-clock seconds per step)
 # Everything runs live (no cached model outputs); runs are deterministic on the same hardware.
 set -euo pipefail
@@ -64,19 +64,17 @@ for c in "$SINGLE" "$FLOOR" "$CEIL"; do
 done
 step damage_synthetic_e2e $PY scripts/synthetic_damage_e2e.py "$CEIL" "$OUT/damage_synthetic"
 
-# --- Our own tape-measured benchmark (Samsung S23) ---------------------------------------------
-S23=data/raw/s23
-if [ -d "$S23" ]; then
-  [ -d "$S23/photos" ] && step s23_photo $PY run.py "$S23/photos" --out "$OUT/s23/photo"
-  for v in "$S23"/video/*.mp4 "$S23"/video/*.MP4 "$S23"/video/*.mov "$S23"/video/*.MOV; do
+# --- Our own tape-measured benchmark (Samsung Galaxy M53) --------------------------------------
+M53=data/raw/m53            # room folders of photos + video/  (python scripts/fetch_data.py)
+if [ -d "$M53" ]; then
+  step m53_photo $PY run.py "$M53" --tier photo --out outputs/fix_loop/after_photo_v2
+  for v in "$M53"/video/*.mp4; do
     [ -f "$v" ] || continue
     b=$(basename "${v%.*}")
-    step "s23_video_$b" $PY run.py "$v" --out "$OUT/s23/video_$b"
+    step "m53_video_$b" $PY run.py "$v" --out "outputs/m53/video_$b"
   done
-  if [ -f data/ground_truth/room_map.json ]; then
-    step s23_score $PY scripts/score_s23.py "$OUT/s23" data/ground_truth/own_rooms.csv data/ground_truth/room_map.json
-  fi
+  step m53_score $PY scripts/score_m53.py outputs/fix_loop/after_photo_v2/plan.json
 else
-  echo "== s23: $S23 not found (python scripts/fetch_data.py) - skipped"
+  echo "== m53: $M53 not found (python scripts/fetch_data.py) - skipped"
 fi
 echo "done: $OUT  (timing: $OUT/timing.tsv)"

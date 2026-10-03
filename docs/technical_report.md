@@ -1,7 +1,7 @@
 # Roomscan — technical report
 
-*Max 6 pages. Draft 2026-10-03 07:00; sections marked **[pending S23 benchmark]** are filled from the
-tape-measured benchmark captured on 2026-10-03.* Limitations are listed in full in `docs/TRADEOFFS.md`.
+*Max 6 pages. 2026-10-03. Numbers: `docs/benchmark_report.md` (own tape-measured home, Samsung Galaxy M53;
+provided sample captures).* Limitations are listed in full in `docs/TRADEOFFS.md`.
 
 ## 1. Architecture
 
@@ -40,7 +40,7 @@ JSON.
 
 **Capture route:** Route 2 — `docs/capture_protocol.md` (one page). Chosen because it needs no Mac,
 TestFlight or install step beyond a free app, and the provided sample data is in Stray Scanner's format.
-**Device matrix with measured accuracy:** `docs/device_matrix.md` **[accuracy column pending S23 benchmark]**.
+**Device matrix with measured accuracy:** `docs/device_matrix.md`.
 
 **Key engineering facts:**
 - Stray Scanner's odometry maps OpenCV-convention camera points to an ARKit world with **+Y up**; verified on
@@ -87,23 +87,37 @@ graph, and a drift metric restricted to wall-pair thickness.
 | Unseen ceiling | unbounded above | reported as ≥ highest wall point, `ceiling_observed: false` |
 
 Video/photo add a relative scale term (Depth Anything bias residual, leave-one-out −2 % … +4 % on the sample
-phone) and pose error (VGGT chaining for video). **[Per-tier measured budget pending S23 benchmark.]**
+phone) and pose error (VGGT chaining for video).
+
+**Measured on our own tape-measured home (Galaxy M53):** photo-tier room areas −21 % … +42 %, whole-property
+footprint +7.5 % (after the fix loop); decomposition from the oracle experiments: placement/room shape >
+poses > scale for photos; poses ≫ scale for video. Scale error on this phone ≈ +0-16 % (walls observed up to
+3.18 m in rooms with a 2.74 m ceiling).
 
 ## 5. Calibration analysis
 
 Every reported number is a 95 % range. Calibration means: the true value falls inside ~95 % of the time.
-- **LiDAR:** **[pending S23 benchmark — coverage of tape values]**.
+- **LiDAR:** no tape ground truth (no LiDAR phone); ranges are plane-fit based and floored at 0.8 cm per wall.
 - **Video:** relative σ widened to 0.25 from the sample comparison (LiDAR as reference): LiDAR length inside the
   video range 5/6 (in-sample) and 4/14 (held-out) → still over-confident on held-out data.
-- **Photo:** relative σ 0.6; leave-one-capture-out wall coverage 86 % and 93 % vs LiDAR.
+- **Photo:** relative σ 0.6; leave-one-capture-out wall coverage 86 % and 93 % vs LiDAR. **On our tape-measured
+  home: 4/4 room areas and 16/16 walls inside their ranges — calibrated, but the ranges are so wide (area
+  lower bound 0) that they carry little information.** Tightening them needs the accuracy fixed first.
 - Rule: never confident garbage — when an input cannot support a number (unseen ceiling, a room from < 2
   photos, a failed reconstruction), the number is either wide and flagged or omitted with a warning.
 
-## 6. The fix loop **[pending — declared after the S23 benchmark]**
+## 6. The fix loop (`docs/fix_loop.md`, tags `fix-before` / `fix-after`)
 
-Evidence collected beforehand: oracle ablations that replace our scale / poses with LiDAR truth to locate
-where video/photo error comes from (`docs/experiments/tier_accuracy.md`). Declaration: `docs/fix_loop.md`;
-before/after runs regenerable from tags `fix-before` / `fix-after`.
+**Gate:** photo tier, wall lengths / whole-property footprint (±8 %). **Before:** footprint +30 % on our home
+(kitchen +145 %, bathroom +123 %). **Root cause:** a photo room was "all floor its cameras see", including floor
+seen through doorways (room boxes 1.2-2.5× too big while scale explained ≤ 1.16×; perfect-data oracle still
++32 %). **Fix:** bound each room by its own walls. **v1** (nearest tall wall from the cameras' centre) fixed the
+small rooms but over-cut the large ones (−65 % / −82 %): few photos produce several copies of one wall up to
+0.6 m apart, some between the room's own cameras. **v2:** a bounding wall must lie beyond the outermost
+cameras (one outlier ignored). **After:** footprint **+7.5 %** (inside ±8 %), kitchen +42 %, bathroom +27 %;
+wall-length gate and adjacency still fail. Predicted: footprint within ±15 % (met), small rooms within ±25 %
+(missed). Held-out check on the sample is confounded (the LiDAR reference changed); no clean evidence that v2
+generalises.
 
 ## 7. Known failure modes
 
@@ -111,7 +125,7 @@ before/after runs regenerable from tags `fix-before` / `fix-after`.
   drops at the glass shower; mirrors can create phantom openings. Mitigations: pose-flip rejection, keeping the
   most consistent pose segment, confidence-2 depth only. Not solved.
 - **Wet-look / shiny floors:** reflections and tile grout fool the damage detector; floors keep only mould.
-- **Low light:** **[pending S23 low-light clip]**.
+- **Low light:** the 9 s bathroom clip with one small light gave 5.5 m² for a 2.87 m² room (+92 %).
 - **Closed doors** are invisible to free-space carving (flat like a wall).
 - **Jagged outlines:** furniture along walls makes floor edges ragged → many short wall segments; repeatability
   across two scans of the flat fails (0/14 walls within 1 cm).
@@ -123,4 +137,4 @@ before/after runs regenerable from tags `fix-before` / `fix-after`.
 VGGT-1B (Meta; non-commercial research licence), Depth Anything V2 Metric-Indoor-Large (CC-BY-NC-4.0),
 Grounding DINO base (Apache-2.0), SAM 2.1 hiera-small (Apache-2.0); all pretrained, no training, weights
 fetched by `scripts/fetch_weights.py`, run locally. Data: the provided Stray Scanner sample captures (no ground
-truth); our own Samsung S23 photos/videos with tape measurements (no iPhone was available).
+truth); our own Samsung Galaxy M53 photos/videos with tape measurements (no iPhone was available).

@@ -6,7 +6,7 @@ brief, why, and what that does to the reported numbers. Kept up to date as work 
 ## Constraints we worked under
 | Constraint | Consequence |
 |---|---|
-| No iPhone available (author's phone is a Samsung Galaxy S23, no LiDAR) | Could not record our own LiDAR captures, a Polycam LiDAR export, or iPhone photo/video |
+| No iPhone available (author's phone is a Samsung Galaxy M53, no LiDAR) | Could not record our own LiDAR captures, a Polycam LiDAR export, or iPhone photo/video |
 | No ground truth exists for the provided sample data (confirmed by the hiring team, 2026-10-02) | Sample-data numbers are consistency checks, not accuracy |
 | ~42 hours from brief to submission | Scope triaged by score weight; see "Not done" |
 
@@ -16,13 +16,21 @@ brief, why, and what that does to the reported numbers. Kept up to date as work 
 | Capture route | Route 2: Stray Scanner (free; same format as the sample data) + one-page protocol | None; the protocol was not tested by us on an iPhone |
 | LiDAR-tier accuracy vs laser ground truth | Planned: ARKitScenes scenes (iPad Pro LiDAR, laser-scanned reference) | iPad Pro, not iPhone; disclosed dataset |
 | Video and photo tiers on the sample apartment | Simulated from the sample `rgb.mp4` (video: RGB only, no depth/poses; photos: 2-8 sharp frames per room) | Video frames are sharper and more evenly spaced than a typical handheld clip; photos are video frames, not stills |
-| Our own photo/video benchmark with tape ground truth | Planned: author's rooms, Samsung S23 main camera (1x), tape measure | Android camera instead of iPhone 15; tape ±2-3 mm, not laser |
+| Our own photo/video benchmark with tape ground truth | Planned: author's rooms, Samsung Galaxy M53 main camera (1x), tape measure | Android camera instead of iPhone 15; tape ±2-3 mm, not laser |
 | Repeatability (same room twice, same tier) | The two whole-floor sample scans of the same apartment | Different walk paths, so this is a harder test than two identical captures |
+
+## Own benchmark (2026-10-03)
+Captured our own home (bedroom, hall, kitchen, bathroom) with a **Samsung Galaxy M53** — photos and videos —
+and tape-measured every wall, door, window and ceiling (`data/ground_truth/`). Results and gates:
+`docs/benchmark_report.md`. Caveats: tape not laser (±0.5 cm); an Android phone, not an iPhone 15; window
+widths/heights assigned assuming "width first"; sill heights and a second ceiling spot not measured; staged
+damage is small (stain 9 × 6 cm, crack 8 cm). The fix-loop rule (v2) was refined while looking at this same
+capture (see `docs/fix_loop.md`).
 
 ## Not done (and why)
 | Requirement | Status | Why |
 |---|---|---|
-| Staged damage room captured at all tiers | Pending | Needs a physical room + phone; S23 attempt planned |
+| Staged damage room captured at all tiers | Pending | Needs a physical room + phone; Galaxy M53 attempt planned |
 | Head-to-head vs Polycam at the LiDAR tier | Pending | Needs a LiDAR iPhone |
 
 ## Engineering decisions with known costs
@@ -120,7 +128,7 @@ What this means, honestly:
   have to be moved 1-4 m to avoid overlaps, so the layout only loosely matches LiDAR (IoU 0.2-0.3).
 - Rooms with < 2 photos are skipped and named in the warnings; rooms nobody can see from another room are drawn
   beside the plan with a warning (2 on floor_only).
-- In real use the S23/iPhone protocol (corner shots across the room) should cover walls better than these
+- In real use the Galaxy M53/iPhone protocol (corner shots across the room) should cover walls better than these
   walkthrough frames; to be re-measured on our own tape-measured rooms.
 
 ## Damage
@@ -156,4 +164,4 @@ and pose and measured on the wall/floor/ceiling plane it lies on (area, width, h
 **Known limits:** thin cracks are weak; a stain on an inside corner is reported per wall; photo-tier damage is
 kept from a single view (`single_view: true`) because a room has only 2-8 photos; photo rooms have no
 `floor_level` (rule R5 cannot fire there); damage on a floor is only reported as mould. Real staged damage on
-our own S23 benchmark room (`data/ground_truth/own_rooms.csv`, `scripts/eval_damage.py`) is the true test.
+our own Galaxy M53 benchmark room (`data/ground_truth/own_rooms.csv`, `scripts/eval_damage.py`) is the true test.

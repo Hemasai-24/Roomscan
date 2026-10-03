@@ -93,5 +93,5 @@ was available to us (see `docs/TRADEOFFS.md`).
 |---|---|
 | LiDAR tier, single room / whole floor | 20 s / 56-82 s (+ damage ~80 s) |
 | Photo tier, 4 rooms (24 photos), incl. damage | 109 s |
-| Video tier, 68 s walkthrough, incl. damage | ~3-4 min (pose estimation dominates) |
+| Video tier, 68 s walkthrough | back end 35 s + damage 102 s; pose estimation not separately timed (VGGT: 5.4 s per 20 frames) |
 | Full reproduction, CPU part (`reproduce_all.sh lidar`) | ~17 min |

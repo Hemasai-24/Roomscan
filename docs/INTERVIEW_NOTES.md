@@ -122,7 +122,20 @@ their ranges are. That is how "the same output contract from each tier" is met.
   **More time:** per-room layout model (walls from the image directly), using door width
   (~0.8-0.9 m) and ceiling height priors as scale checks.
 
-## 10. Process choices worth mentioning
+## 10. Our own benchmark and the fix loop (the 25 % part)
+- **Benchmark:** our home (3 rooms + hall) with a Galaxy M53, tape-measured. Photo tier before: footprint +30 %
+  (kitchen +145 %, bathroom +123 %). Clue: rooms 1.2-2.5× too big, but scale only ≤ 1.16× too big (walls
+  "seen" up to 3.18 m in a 2.74 m room) → it's not scale.
+- **Root cause:** a photo room = all floor its cameras see → floor seen **through doorways** counted (the
+  kitchen "saw" the hall). Morning oracle test agreed: perfect data still +32 %.
+- **Fix:** cut each room at its own walls. **v1** (nearest wall) over-cut big rooms (−65 / −82 %) because few
+  photos give several copies of one wall up to 0.6 m apart. **v2:** a room's own wall can't lie between two
+  of its own camera positions → nearest wall beyond the outermost cameras, ignoring one outlier (a doorway
+  photo taken from the next room). **After: +7.5 %** (inside ±8 %); kitchen +42 %, bathroom +27 %.
+- **Say honestly:** v2 was refined on the same data; the held-out check on the sample is confounded; wall
+  lengths and adjacency still fail; prediction for small rooms (±25 %) was missed.
+
+## 11. Process choices worth mentioning
 - Tests first for every piece (synthetic rooms with known answers), then real data.
 - Every deviation from a plan was written down as a "ruling" with its cost if wrong.
 - A fresh reviewer checked Plan 1; 6 of its 8 important findings were fixed with tests.

@@ -1,4 +1,4 @@
-# Own benchmark capture — Samsung S23 + tape (≈ 75 min)
+# Own benchmark capture — Samsung Galaxy M53 + tape (≈ 75 min)
 
 Our only real ground truth. Follow in order.
 
@@ -45,10 +45,10 @@ Format: `room1 W1 412.5` · `room1 C1 268` · `room1 D1 width 82 height 205` · 
 (or photograph the paper sheet).
 
 ## 6. Optional: Polycam (20 min)
-Install Polycam (free) on the S23, scan 2 of the same rooms in **Photo mode**, export. Labelled as a
+Install Polycam (free) on the Galaxy M53, scan 2 of the same rooms in **Photo mode**, export. Labelled as a
 photo-mode comparison (the brief asks for LiDAR; no LiDAR phone available).
 
 ## 7. Hand-off
-Copy everything **unedited** (USB cable or Google Drive) to `~/projects/floorplan-pipeline/data/raw/s23/`:
+Copy everything **unedited** (USB cable or Google Drive) to `~/projects/floorplan-pipeline/data/raw/m53/`:
 `photos/` (all photos, unsorted is fine) and `video/` (all clips). Send the measurements + photo counts;
 we sort photos into room folders together.
