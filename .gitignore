@@ -11,3 +11,5 @@ third_party/
 .claude/
 weights
 third_party
+data/public_damage/*.jpg
+data/public_damage/eval*.json

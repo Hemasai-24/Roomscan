@@ -1,6 +1,6 @@
 """Damage detector on public photos of real damage (Wikimedia Commons; detection only - no depth, no size).
 
-usage: python scripts/fetch_public_damage.sh && python scripts/eval_public_damage.py
+usage: python scripts/eval_public_damage.py [detector]   (images: data/public_damage/credits.txt, fetched by URL)
 Each image has an expected set of acceptable classes; reports detections, hits and misses."""
 import json
 import sys
@@ -23,10 +23,11 @@ EXPECTED = {   # image -> acceptable classes (what a human would call it)
 
 
 def main():
+    detector = sys.argv[1] if len(sys.argv) > 1 else None          # e.g. owlv2+sam2
     rows, hits = [], 0
     for name, want in EXPECTED.items():
         img = np.asarray(Image.open(DIR / name).convert("RGB"))
-        found = detect_damage(img)
+        found = detect_damage(img, detector=detector)
         classes = sorted({d["class"] for d in found})
         hit = bool(want & set(classes))
         hits += hit
@@ -34,7 +35,8 @@ def main():
                      "scores": [round(d["score"], 2) for d in found], "hit": hit})
         print(f"{name:32} expected {sorted(want)!s:28} detected {classes!s:40} {'HIT' if hit else 'MISS'}")
     print(f"recall: {hits}/{len(EXPECTED)} images")
-    (DIR / "eval.json").write_text(json.dumps({"recall": f"{hits}/{len(EXPECTED)}", "rows": rows}, indent=1))
+    (DIR / f"eval_{detector or 'default'}.json").write_text(json.dumps({"recall": f"{hits}/{len(EXPECTED)}", "rows": rows},
+                                                                       indent=1))
 
 
 if __name__ == "__main__":
