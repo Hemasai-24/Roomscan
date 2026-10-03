@@ -13,3 +13,22 @@ Interpretation used in own_rooms.csv:
 - door: 80 cm wide, 196 cm high
 - ceiling: one spot, 274 cm
 - staged crack: 8 x 5 cm bounding box (length taken as 8 cm); staged stain: 9 x 6 cm
+
+## Hall, kitchen, bathroom (sent 14:48-14:55)
+Hall: 378.5cm 411cm 378.5cm 411cm
+Window1: 179.5cm 131cm 179.5cm 131cm
+Window2: 134.5cm 132cm 134.5cm 132cm
+Door: 193cm 91cm 193cm 91cm
+Ceiling: 274cm
+Kitchen :188cm152cm 188cm 152cm
+Door: 202cm 80cm 202cm 80cm
+Window: 78.5cm 103cm 78.5cm 103cm
+Ceiling: 274cm
+Bathroom:203cm 141.5cm 203cm 141.5cm
+Window: 57.5cm 78cm 57.5cm 78cm
+Door: 202cm 80cm 202cm 80cm
+Ceiling: 274cm
+
+Interpretation: rooms are rectangles (W1..W4 alternate the two lengths); door = height x width
+(the larger value is the height); window first value = width, second = height (assumed; sills not measured).
+Floor areas: bedroom 8.37, hall 15.56, kitchen 2.86, bathroom 2.87 m2; total 29.66 m2.

@@ -11,3 +11,32 @@ bedroom,window_height,N1,132,assumed height
 bedroom,damage_stain_width,S1,9,
 bedroom,damage_stain_height,S1,6,
 bedroom,damage_crack_length,K1,8,bounding box 8 x 5 cm
+hall,wall,W1,378.5,
+hall,wall,W2,411,
+hall,wall,W3,378.5,
+hall,wall,W4,411,
+hall,ceiling_height,C1,274,one spot
+hall,door_width,D1,91,
+hall,door_height,D1,193,
+hall,window_width,N1,179.5,assumed width
+hall,window_height,N1,131,assumed height
+hall,window_width,N2,134.5,assumed width
+hall,window_height,N2,132,assumed height
+kitchen,wall,W1,188,
+kitchen,wall,W2,152,
+kitchen,wall,W3,188,
+kitchen,wall,W4,152,
+kitchen,ceiling_height,C1,274,one spot
+kitchen,door_width,D1,80,
+kitchen,door_height,D1,202,
+kitchen,window_width,N1,78.5,assumed width
+kitchen,window_height,N1,103,assumed height
+bathroom,wall,W1,203,
+bathroom,wall,W2,141.5,
+bathroom,wall,W3,203,
+bathroom,wall,W4,141.5,
+bathroom,ceiling_height,C1,274,one spot
+bathroom,door_width,D1,80,
+bathroom,door_height,D1,202,
+bathroom,window_width,N1,57.5,assumed width
+bathroom,window_height,N1,78,assumed height
