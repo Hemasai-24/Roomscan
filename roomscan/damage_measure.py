@@ -71,7 +71,7 @@ def _record(cls, score, s, pts, rays, z, cos_a, K, tier):
 
     def m(v, rel, unit="m"):
         h = Z95 * rel * v
-        return {"value": round(v, 4), "lo": round(v - h, 4), "hi": round(v + h, 4), "unit": unit}
+        return {"value": round(v, 4), "lo": round(max(v - h, 0.0), 4), "hi": round(v + h, 4), "unit": unit}
 
     bottom = float(np.percentile(pts @ UP, 1)) - s.get("floor_h", 0.0)
     return {"class": cls, "score": float(score), "surface_id": s["surface_id"], "room_id": s["room_id"],

@@ -43,6 +43,10 @@ def widen_room(room, rel):
     if "perimeter" in room:
         _widen(room["perimeter"], rel)
     _widen(room["ceiling_height"], rel)
+    ch = room["ceiling_height"]
+    room["warnings"] = [w.split("; reported range")[0] + f"; reported range {ch['lo']:.2f}-{ch['hi']:.2f} m "
+                        "(includes the photo tier's scale uncertainty)" if w.startswith("ceiling not observed") else w
+                        for w in room.get("warnings", [])]
     for op in room.get("openings", []):
         for k in ("width", "height", "sill_height"):
             if k in op:

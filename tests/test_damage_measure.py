@@ -90,3 +90,10 @@ def test_photo_tier_ranges_wider_than_lidar():
     a = measure_damage(v, [WALL_A], tier="lidar")[0]["area"]
     b = measure_damage(v, [WALL_A], tier="photo")[0]["area"]
     assert (b["hi"] - b["lo"]) > (a["hi"] - a["lo"])
+
+
+def test_damage_size_ranges_never_negative():
+    depth = np.full((H, W), 2.0)
+    d = measure_damage([_view(depth, _mask(120, 126, 96, 120))], [WALL_A], tier="photo")   # thin 6-px mask
+    for k in ("area", "width", "height"):
+        assert d[0][k]["lo"] >= 0.0

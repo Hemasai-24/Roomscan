@@ -75,3 +75,13 @@ def test_unseen_ceiling_in_video_tier_includes_scale_uncertainty():
     video = measure_room(c, v, e, a, [], tier="video")["ceiling_height"]
     assert video["lo"] < lidar["lo"] - 0.3          # walls seen up to 2.6 m in a video whose scale may be 25% off
     assert video["hi"] > lidar["hi"]
+
+
+def test_unseen_ceiling_warning_matches_reported_range():
+    p = room_points([(0, 0), (4, 0), (4, 3), (0, 3)], 2.6, ceiling=False)
+    c = classify_planes(extract_planes(p))
+    v, e, a = footprint(c)
+    r = measure_room(c, v, e, a, [], tier="video")
+    ch = r["ceiling_height"]
+    w = next(x for x in r["warnings"] if "ceiling" in x)
+    assert f"{ch['lo']:.2f}" in w and f"{ch['hi']:.2f}" in w
