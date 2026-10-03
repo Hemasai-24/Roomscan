@@ -57,7 +57,7 @@ class FakeMetric:
     def __init__(self, runner, bias):
         self.runner, self.bias = runner, bias
 
-    def predict(self, images):
+    def predict(self, images, fx=None):
         return [d / 0.5 * self.bias for d in self.runner.run(images)["depth"]]
 
 

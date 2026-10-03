@@ -13,7 +13,7 @@ from roomscan.video_capture import estimate_up, level, refine_up, write_capture
 from roomscan.find_surfaces import CaptureError
 from roomscan.video_frames import model_size, pick_sharpest
 from roomscan.video_poses import VGGTRunner, run_chunks
-from roomscan.video_scale import MetricDepth, load_bias, scale_from_depths
+from roomscan.video_scale import metric_model, scale_from_depths
 
 FRAMES_PER_SEC = 3.0
 SIZE = (392, 518)        # upright portrait; both multiples of VGGT's 14-px patch
@@ -68,7 +68,7 @@ def video_to_capture(video, out_dir, rotate=0, root=Path(__file__).resolve().par
     check_video_length(video)
     idx, imgs = pick_sharpest(video, per_sec=FRAMES_PER_SEC, size=model_size(video, rotate), rotate=rotate)
     merged = run_chunks(VGGTRunner(root), imgs)
-    metric_model, bias = MetricDepth(root), load_bias()
+    metric_depth, bias = metric_model(root)       # ROOMSCAN_METRIC_DEPTH=unidepth|depth_anything
     sizes = np.bincount(merged["seg"])
     stats, infos, warnings = {}, {}, []
     for sg in np.argsort(-sizes):
@@ -77,7 +77,7 @@ def video_to_capture(video, out_dir, rotate=0, root=Path(__file__).resolve().par
             continue
         cand = Path(out_dir) / f"video_segment_{sg}"
         try:                                       # one unusable piece of the walk must not stop the run
-            spread, info = _segment_capture(cand, merged, keep, imgs, metric_model, bias)
+            spread, info = _segment_capture(cand, merged, keep, imgs, metric_depth, bias)
         except (CaptureError, ValueError) as e:
             warnings.append(f"video pose segment {int(sg)} ({len(keep)} frames) unusable: {e}")
             continue

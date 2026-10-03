@@ -56,8 +56,9 @@ def widen_room(room, rel):
 def _model_reconstruct():
     from roomscan.photo_room import measure_photo_room, photos_to_capture
     from roomscan.video_poses import VGGTRunner
-    from roomscan.video_scale import MetricDepth, load_bias
-    runner, metric, bias = VGGTRunner(ROOT), MetricDepth(ROOT), load_bias()
+    from roomscan.video_scale import metric_model
+    runner = VGGTRunner(ROOT)
+    metric, bias = metric_model(ROOT)                # ROOMSCAN_METRIC_DEPTH=unidepth|depth_anything
 
     def reconstruct(imgs, fx, out_dir, rid):
         cap_dir, info = photos_to_capture(imgs, fx, out_dir, runner, metric, bias)

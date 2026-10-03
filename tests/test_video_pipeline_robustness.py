@@ -10,8 +10,7 @@ def _fake(monkeypatch, fail_segments):
     monkeypatch.setattr(vp, "model_size", lambda v, r=0: (392, 518))
     monkeypatch.setattr(vp, "pick_sharpest", lambda *a, **k: (list(range(40)), np.zeros((40, 518, 392, 3), np.uint8)))
     monkeypatch.setattr(vp, "VGGTRunner", lambda root: None)
-    monkeypatch.setattr(vp, "MetricDepth", lambda root: None)
-    monkeypatch.setattr(vp, "load_bias", lambda: 1.4)
+    monkeypatch.setattr(vp, "metric_model", lambda root: (None, 1.4))
     seg = np.array([0] * 25 + [1] * 15)
     monkeypatch.setattr(vp, "run_chunks", lambda runner, imgs: {"seg": seg, "segments": 2})
 

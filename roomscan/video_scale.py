@@ -36,8 +36,14 @@ def scale_from_depths(rel, metric, conf, bias):
     return s, spread
 
 
+def intrinsics(fx, shape):
+    """Pinhole K for an image of shape (h, w) with focal fx (px) and the principal point at the centre."""
+    h, w = shape[:2]
+    return np.array([[fx, 0.0, w / 2], [0.0, fx, h / 2], [0.0, 0.0, 1.0]])
+
+
 class MetricDepth:
-    """Depth Anything V2 Metric-Indoor-Large (transformers), fp16 on GPU."""
+    """Depth Anything V2 Metric-Indoor-Large (transformers), fp16 on GPU. Ignores the focal length."""
 
     def __init__(self, root=Path(__file__).resolve().parents[1]):
         import torch
@@ -47,7 +53,7 @@ class MetricDepth:
         self.proc = AutoImageProcessor.from_pretrained(w)
         self.model = AutoModelForDepthEstimation.from_pretrained(w).eval().cuda().half()
 
-    def predict(self, images):
+    def predict(self, images, fx=None):
         out = []
         for img in images:
             inp = self.proc(images=img, return_tensors="pt").to("cuda")
@@ -55,3 +61,48 @@ class MetricDepth:
                 d = self.model(pixel_values=inp["pixel_values"].half()).predicted_depth[0].float().cpu().numpy()
             out.append(cv2.resize(d, (img.shape[1], img.shape[0])))
         return out
+
+
+class UniDepthMetric:
+    """UniDepth V2 (ViT-S): metric depth that uses the camera intrinsics when given (EXIF focal), else its own
+    estimate. Measured on the LiDAR sample with no calibration: depth ratio 0.998 (per-frame std 0.11) vs
+    Depth Anything 1.425 (std 0.30). Code: lpiccinelli-eth/UniDepth (CC BY-NC 4.0), fetched to third_party/."""
+
+    def __init__(self, root=Path(__file__).resolve().parents[1]):
+        import sys
+        import types
+        import torch
+        for code in (root / "third_party" / "UniDepth", root / "exp_third" / "UniDepth-main"):
+            if code.exists():
+                sys.path.insert(0, str(code))
+                break
+        sys.modules.setdefault("wandb", types.ModuleType("wandb"))   # imported by UniDepth for training logs only
+        from unidepth.models import UniDepthV2
+        w = root / "weights" / "unidepth-v2-vits14"
+        self.torch = torch
+        self.model = UniDepthV2.from_pretrained(str(w) if w.exists() else "lpiccinelli/unidepth-v2-vits14")
+        self.model = self.model.cuda().eval()
+
+    def predict(self, images, fx=None):
+        out = []
+        for img in images:
+            t = self.torch.from_numpy(np.ascontiguousarray(img)).permute(2, 0, 1).cuda()
+            K = None if fx is None else self.torch.tensor(intrinsics(fx, img.shape), dtype=self.torch.float32).cuda()
+            with self.torch.no_grad():
+                d = (self.model.infer(t, K) if K is not None else self.model.infer(t))["depth"][0, 0]
+            out.append(d.float().cpu().numpy())
+        return out
+
+
+METRIC_MODELS = {"depth_anything": (MetricDepth, KEY), "unidepth": (UniDepthMetric, None)}
+
+
+def metric_model(root=Path(__file__).resolve().parents[1]):
+    """(model, bias) chosen by ROOMSCAN_METRIC_DEPTH (default depth_anything). A model without a
+    calibration key is used as is (bias 1.0)."""
+    import os
+    name = os.environ.get("ROOMSCAN_METRIC_DEPTH", "depth_anything")
+    if name not in METRIC_MODELS:
+        raise ValueError(f"ROOMSCAN_METRIC_DEPTH={name!r}: choose one of {sorted(METRIC_MODELS)}")
+    make, key = METRIC_MODELS[name]
+    return make(root), (load_bias() if key else 1.0)

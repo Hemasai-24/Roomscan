@@ -37,7 +37,7 @@ def photos_to_capture(images, fx_exif, out_dir, runner, metric, bias):
     if fx_exif:
         K[0, 0] = K[1, 1] = fx_exif
         source = "exif"
-    scale, spread = scale_from_depths(list(r["depth"]), metric.predict(images), list(r["conf"]), bias)
+    scale, spread = scale_from_depths(list(r["depth"]), metric.predict(images, fx=fx_exif), list(r["conf"]), bias)
     T = [np.array(x, float) for x in r["T"]]
     for x in T:
         x[:3, 3] *= scale
