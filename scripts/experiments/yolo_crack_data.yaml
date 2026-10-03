@@ -1,0 +1,6 @@
+path: /home/hemasai/projects/datasets/crack-seg
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: crack

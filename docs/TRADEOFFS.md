@@ -60,7 +60,12 @@ two). Detector comparison, full pipeline:
 | **Grounding DINO @ 0.30 (default)** | **5/10** | **4** |
 | OWLv2 @ 0.20 (`ROOMSCAN_DAMAGE_DETECTOR=owlv2+sam2`) | 4/10 | 5 (incl. 2 "mould") |
 
-Cracks are the weak class (1 of 4 crack photos found). Public photos: `scripts/fetch_public_damage.py`,
+Cracks are the weak class (1 of 4 crack photos found). **Tried a crack specialist:** YOLO11n-seg fine-tuned
+15 epochs on the Ultralytics crack-seg dataset (val mAP50 0.76 in its own domain) — on wall cracks it also found
+1 of 4, with 16-105 of 153 clean frames showing a "crack" depending on confidence (Grounding DINO: 91/153 before
+our filters). Not adopted: a domain gap (pavement/concrete training data vs indoor walls); fixing it needs
+labelled indoor wall-crack images. Microsoft's building-damage model was considered and ruled out: it rates
+whole buildings from satellite images. Scripts: `scripts/experiments/`. Public photos: `scripts/fetch_public_damage.py`,
 `scripts/eval_public_damage.py`; credits and licences in `data/public_damage/credits.txt`.
 
 ## Constraints we worked under
