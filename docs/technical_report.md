@@ -1,166 +1,151 @@
-# Roomscan: technical report
+# Roomscan technical report
 
-*Max 6 pages. 2026-10-03. Numbers: `docs/benchmark_report.md` (own tape-measured home, Samsung Galaxy M53;
-provided sample captures).* Limitations are listed in full in `docs/TRADEOFFS.md`.
+Roomscan turns a phone capture of a home into a dimensioned floor plan. It accepts three inputs: a LiDAR scan
+from Stray Scanner, a walkthrough video, or 2-8 photos per room. Every measurement in the output has a 95 %
+range. Results are in `docs/benchmark_report.md`. Limitations are in `docs/TRADEOFFS.md`.
 
-## 1. Architecture
+## 1. Design
+
+All three inputs go through one back end. Each tier has a small front end that converts its input into depth
+images, camera poses and camera intrinsics in metres, saved in Stray Scanner's file layout. The back end then
+builds the plan the same way for every tier. The tiers differ only in the front end and in how wide their
+ranges are, so any fix to the back end helps all three.
 
 ```
- LiDAR:  Stray Scanner export ─────────────────────────────────────────────┐
- Video:  .mp4/.mov ─► sharp frames ─► VGGT poses+depth ─► Depth Anything scale ┼─► "capture" = depth + poses + K (metres)
- Photo:  room folders ─► per room: VGGT + Depth Anything + EXIF focal ───────┘        │
-                                                                                      ▼
-   points ─► planes (seeded RANSAC, normal-consistent) ─► floor / ceiling / walls ─► rooms (watershed at doorways)
-     ─► per room: outline snapped to wall planes · floor level · ceiling · openings (free-space carving)
-     ─► adjacency (doors) ─► damage (Grounding DINO + SAM2 → measured on its surface) ─► rules R1-R5 ─► scope
-     ─► every number as {value, lo, hi} (95 %) ─► plan.json (published schema) + plan.svg/png
+LiDAR scan   ──────────────────────────────────────────┐
+Video        ── sharp frames ── VGGT + Depth Anything ──┼── depth + poses + intrinsics (metres)
+Room photos  ── per room: VGGT + Depth Anything + EXIF ─┘                │
+                                                                         ▼
+planes ── floor / ceiling / walls ── rooms ── outlines, openings, ceiling ── damage ── plan.json + plan.png
 ```
 
-**One idea carries the design.** Every tier is converted into the same intermediate form: depth images,
-camera poses and intrinsics in metres, written in Stray Scanner's file layout. One back end then produces the
-plan. Tiers differ only in their front end and in how wide their ranges are. This gives the brief's "same
-output contract from each tier, intervals that widen as sensor data thins" by construction, and every
-improvement to the back end helps all three tiers.
+**Front ends**
+- LiDAR: reads the Stray Scanner export. Only high-confidence depth is used.
+- Video: picks sharp frames, estimates poses and depth with VGGT-1B in chunks of 20 frames (to fit an 8 GB
+  GPU), and sets the metric scale with Depth Anything V2 Metric-Indoor.
+- Photos: the same models, run on one room folder at a time, with the focal length taken from EXIF. Rooms are
+  joined where the same doorway photo appears in both rooms' folders.
 
-**One command per capture:** `python run.py <input>`; the tier is detected from the input (Stray folder,
-video file, folder of room folders). Failures are one readable line (`cannot make a plan: …`), and a room or
-video segment that cannot be measured is skipped with a warning rather than losing the capture.
+**Back end**
+1. Fit planes with RANSAC and label them floor, ceiling or wall.
+2. Split the floor into rooms at doorways (watershed on distance to the nearest wall).
+3. Draw each room outline with right angles and snap its edges to the wall planes.
+4. Find doors and windows (section 4).
+5. Detect damage, apply the concealed-damage rules, and list repair items.
+6. Attach a 95 % range to every number. Write `plan.json` (published schema), `plan.png` and `plan.svg`.
 
-**Determinism:** RANSAC and feature matching are seeded and single-threaded (Open3D's threaded RANSAC returned
-different planes on identical input, caught by a test); frame selection is deterministic; same input → same
-JSON.
+**One command:** `python run.py <input>`. The tier is detected from the input. If a plan cannot be made, the
+tool prints one line saying why. A room or video segment that cannot be measured is skipped with a warning.
 
-## 2. Tier design and device matrix
+**Same input, same output:** RANSAC and feature matching are seeded and single-threaded. Open3D's RANSAC
+returned different planes for the same input, so we wrote our own.
 
-| Tier | Phones | Capture tool | Front end | Range model |
+## 2. Tiers and devices
+
+| Tier | Phone | App | How depth and poses are obtained | Range |
 |---|---|---|---|---|
-| LiDAR | iPhone 12 Pro and later Pro models | Stray Scanner (free) | ARKit poses + LiDAR depth (confidence 2 only) | plane-fit standard error, ≥ 0.8 cm per wall offset |
-| Video | any iPhone 15+ | Camera app | VGGT-1B in 20-frame chunks (bf16, 5.5 GB), Depth Anything V2 Metric-Indoor for scale (bias-calibrated) | + relative scale σ |
-| Photo | any iPhone 15+ | Camera app | VGGT on each room's 2-8 photos jointly, EXIF focal, Depth Anything scale; rooms stitched at shared doors | + relative scale σ (wide) |
+| LiDAR | iPhone 12 Pro or later Pro | Stray Scanner (free) | ARKit poses, LiDAR depth | plane-fit error, at least 0.8 cm per wall |
+| Video | any recent phone | camera app | VGGT poses and depth, Depth Anything scale | plus a relative scale term (σ 0.25) |
+| Photo | any recent phone | camera app | the same, per room, with EXIF focal length | plus a larger scale term (σ 0.6) |
 
-**Capture route:** Route 2, described on one page in `docs/capture_protocol.md`. Chosen because it needs no Mac,
-TestFlight or install step beyond a free app, and the provided sample data is in Stray Scanner's format.
-**Device matrix with measured accuracy:** `docs/device_matrix.md`.
+The capture route is Route 2: Stray Scanner for LiDAR and the normal camera app for video and photos. It needs
+no Mac or developer account, and the sample data was already in Stray Scanner format. The capture steps fit on
+one page (`docs/capture_protocol.md`). Measured accuracy per tier is in `docs/device_matrix.md`.
 
-**Key engineering facts:**
-- Stray Scanner's odometry maps OpenCV-convention camera points to an ARKit world with **+Y up**; verified on
-  data (floor normal (0.00, 1.00, 0.00) without an axis flip; walls smeared with one).
-- A horizontal RANSAC hypothesis crosses every wall in a thin band; on real scans this produced fake "floors"
-  at every height and found only 3 walls. Requiring each point's normal to agree with the plane
-  (|n·n_p| > 0.85) gives 32 walls and no fake slices.
-- Rooms: distance transform of the free floor, cores > 0.45 m from walls, watershed; open boundaries > 1.2 m
-  merge (open plan); tall-wall-only obstacles (counters don't split rooms); wall-enclosed small spaces (WC,
-  corridor) kept.
-- Openings: a depth ray ending > 15 cm behind a wall line went *through* it → that wall cell is open.
-  Unobserved wall is never "open". Door if the opening reaches the floor, else window.
+## 3. Decisions that changed the results
 
-## 3. Drift handling
+- **Axes.** Stray Scanner poses already have +Y up, so no axis flip is needed. With the flip the walls smeared;
+  without it the floor normal is (0, 1, 0).
+- **Plane fitting.** Plain RANSAC found fake "floors" at every height, because a horizontal plane cuts through
+  every wall in a thin band. Requiring each point's surface normal to agree with the plane removed them and
+  raised the wall count from 3 to 32 on the sample.
+- **Room splitting.** Only tall obstacles split rooms, so kitchen counters and beds do not. Small rooms closed
+  by walls, such as a toilet, are kept.
+- **Openings.** A wall is only called open where a depth ray passed through it. A wall that was never seen is
+  not an opening.
+- **Unseen ceilings.** If the ceiling never appears in the capture, the ceiling height is reported as a wide
+  range and flagged `ceiling_observed: false`.
 
-**Method (`roomscan/drift_correction.py`, `--drift-correction on|off`):** the walk is cut into ~5 s chunks;
-chunk 0 is the reference; each further chunk gets a small yaw + 3D shift, solved jointly (ICP-style against
-the already-placed wall/floor points of matching orientation), limited to 2° / 10 cm per chunk, then blended
-linearly between chunk centres. Poses are never used without this option being available, and the
-ablation is reported.
+## 4. Doors, windows and damage
 
-**Ablation (`scripts/drift_ablation.py`):**
+**Doors and windows** come from two sources. From depth: rays that pass through a wall mark an opening; it is a
+door if it reaches the floor and a window otherwise. From images: a detector draws boxes for "door" and
+"window", and the box edges are projected onto the fitted wall to get width and height in metres. A box cut off
+at the left or right edge of the photo is rejected. If only the top or bottom is cut off, the width is kept and
+the height is marked unknown. Photo and video use the image openings. LiDAR keeps its depth openings and adds
+image openings only where depth found none, which covers closed doors.
 
-| Capture | Wall thickness off → on | Rooms off → on |
+**Damage** is found with Grounding DINO (boxes from text such as "water stain" and "crack") and SAM 2.1 (exact
+outlines). Each outline is placed on its wall, floor or ceiling and measured in square metres. To cut false
+alarms, a region must appear in at least two views, cover at least 0.003 m², and "peeling paint" needs a score
+of at least 0.45. Five rules (R1-R5) turn damage into concealed-damage flags. For example, R1 flags a water stain on
+a ceiling as a possible leak from above, and R4 flags a crack longer than 1 m as possible structural movement. Each flag names its rule, and each repair item names the surface it applies to.
+
+## 5. Drift
+
+Long walks drift: the phone's position estimate slowly goes wrong, so the same wall can appear twice.
+
+**Method** (`roomscan/drift_correction.py`, switch `--drift-correction on|off`): the walk is cut into chunks of
+about 5 seconds. Each chunk is aligned to the walls and floor already placed by earlier chunks, allowing at
+most 2° of rotation and 10 cm of shift. Corrections are blended between chunks.
+
+| Capture | Wall thickness, off → on | Rooms, off → on |
 |---|---|---|
-| synthetic room, injected 3° / 8 cm drift | 34 → 13 mm | n/a |
-| with_ceiling (sample) | 58.9 → 56.6 mm | 8 → 10 |
-| floor_only (sample) | 52.8 → 54.8 mm | 10 → 8 |
+| synthetic room with 3° / 8 cm drift added | 34 → 13 mm | - |
+| sample, with_ceiling | 58.9 → 56.6 mm | 8 → 10 |
+| sample, floor_only | 52.8 → 54.8 mm | 10 → 8 |
 
-**Honest reading:** the method removes injected drift, but on the real scans the effect is within the noise of
-our sharpness metric (dominated by furniture near walls), and correction changes how rooms are split, so the
-default is **off**. The next step is loop closure with a pose graph (both whole-floor walks end 17 cm and
-39 cm from their start), plus a drift metric restricted to wall-pair thickness.
+The method removes drift that we added on purpose. On the real scans the change is within the noise of the
+measure, which is dominated by furniture near walls, and it changes how rooms are split. It is therefore off
+by default. The next step would be loop closure: both whole-floor walks end 17 cm and 39 cm from where they
+started.
 
-## 4. Error budget (LiDAR tier, per wall length)
+## 6. Error budget and calibration
 
-| Source | Size | How handled |
+| Error source (LiDAR, per wall) | Size | Handling |
 |---|---|---|
-| LiDAR depth noise per point | ~1 cm | averaged by plane fit over thousands of points |
-| Plane offset (fit standard error) | ≤ 1 mm statistical | floored at 0.8 cm per offset (systematics) |
-| Drift between the two walls' observation times | 0-several cm on long walks | ablation; widened by floor spread |
-| Outline snapping (wall plane behind the edge) | 0 when snapped; ~3 cm raster when not | `plane_supported` flag per wall |
-| Floor split into slabs (drift / tilt) | 2-8 cm between slabs | slab spread widens ceiling-height range |
-| Unseen ceiling | unbounded above | reported as ≥ highest wall point, `ceiling_observed: false` |
+| depth noise per point | about 1 cm | averaged over thousands of points by the plane fit |
+| plane position | under 1 mm statistically | floored at 0.8 cm |
+| drift between two walls | 0 to several cm on long walks | drift option; floor spread widens the range |
+| outline not snapped to a wall plane | about 3 cm | flagged per wall (`plane_supported`) |
+| unseen ceiling | unbounded | wide range, flagged |
 
-Video/photo add a relative scale term (Depth Anything bias residual, leave-one-out −2 % … +4 % on the sample
-phone) and pose error (VGGT chaining for video).
+Video and photo add a scale error (Depth Anything on this kind of scene: −2 % to +4 % on the sample iPhone,
+0 to +16 % on our Galaxy M53) and pose errors.
 
-**Measured on our own tape-measured home (Galaxy M53):** photo-tier room areas −21 % … +42 %, whole-property
-footprint +7.5 % (after the fix loop); decomposition from the oracle experiments: placement/room shape >
-poses > scale for photos; poses ≫ scale for video. Scale error on this phone ≈ +0-16 % (walls observed up to
-3.18 m in rooms with a 2.74 m ceiling).
+**Calibration.** A 95 % range is calibrated if the true value falls inside it about 95 % of the time. On our
+tape-measured home, the truth is inside the photo-tier range for 4 of 4 room areas and 15 of 16 walls. The
+ranges are therefore honest, but they are too wide to be useful (the lower bound of every room area is 0).
+Narrower ranges need better accuracy first. There is no tape check for LiDAR because we had no LiDAR phone.
 
-## 5. Calibration analysis
+## 7. Fix loop
 
-Every reported number is a 95 % range. Calibration means: the true value falls inside ~95 % of the time.
-- **LiDAR:** no tape ground truth (no LiDAR phone); ranges are plane-fit based and floored at 0.8 cm per wall.
-- **Video:** relative σ widened to 0.25 from the sample comparison (LiDAR as reference): LiDAR length inside the
-  video range 5/6 (in-sample) and 4/14 (held-out) → still over-confident on held-out data.
-- **Photo:** relative σ 0.6; leave-one-capture-out wall coverage 86 % and 93 % vs LiDAR. **On our tape-measured
-  home, 4/4 room areas and 16/16 walls fall inside their ranges. The ranges are calibrated, but so wide (area
-  lower bound 0) that they carry little information.** Tightening them needs the accuracy fixed first.
-- Rule: no confident garbage. When an input cannot support a number (unseen ceiling, a room from fewer than 2
-  photos, a failed reconstruction), the number is either wide and flagged, or omitted with a warning.
-
-## 6. The fix loop (`docs/fix_loop.md`, tags `fix-before` / `fix-after`)
-
-**Gate:** photo tier, wall lengths / whole-property footprint (±8 %). **Before:** footprint +30 % on our home
-(kitchen +145 %, bathroom +123 %). **Root cause:** a photo room was "all floor its cameras see", including floor
-seen through doorways (room boxes 1.2-2.5× too big while scale explained ≤ 1.16×; perfect-data oracle still
-+32 %). **Fix:** bound each room by its own walls. **v1** (nearest tall wall from the cameras' centre) fixed the
-small rooms but over-cut the large ones (−65 % / −82 %): few photos produce several copies of one wall up to
-0.6 m apart, some between the room's own cameras. **v2:** a bounding wall must lie beyond the outermost
-cameras (one outlier ignored). **After:** footprint **+7.5 %** (inside ±8 %, but per-room errors partly cancel: summed absolute error ≈ 19 %), kitchen +42 %, bathroom +27 %;
-wall-length gate and adjacency still fail. Predicted: footprint within ±15 % (met), small rooms within ±25 %
-(missed). Held-out check on the sample is confounded (the LiDAR reference changed); no clean evidence that v2
-generalises.
-
-## 7. Doors, windows and damage
-
-**Doors and windows** come from two sources. Depth: a ray that ends beyond a wall passed through an opening
-(free-space carving), so an unseen wall is never called an opening. Image: a detector box ("door. window.") is
-turned into metres by casting rays through its left, right, top and bottom edges onto the fitted wall; the
-same opening in several views is merged. A box cut at the photo's left or right edge is rejected; if only its
-top or bottom is cut, the width is kept and the height is reported as unknown. Implausible sizes are rejected.
-Photo and video use the image openings; LiDAR keeps its carved openings and adds image openings only where none
-was carved (closed doors). On our home's photos this measured 0 of 9 openings within 2 cm, because the photos
-have no straight-on, full-frame door shots; the protocol now asks for them.
-
-**Damage:** Grounding DINO boxes, SAM 2.1 masks, each mask measured on its wall/floor/ceiling plane in metres.
-A region must be seen in two views on every tier, cover at least 0.003 m², and "peeling paint" needs a score of
-0.45. Detectors compared on 10 public damage photos and the undamaged sample flat:
-
-| Detector | Real damage found (10 photos) | False alarms (3 clean captures) |
-|---|---|---|
-| Grounding DINO, threshold 0.30 (default) | 5 | 4 |
-| OWLv2, threshold 0.20 | 4 | 5 |
-| YOLO11n-seg fine-tuned on crack-seg (cracks only) | 1 of 4 cracks | 16-105 of 153 frames |
-
-Rules R1-R5 turn damage into concealed-damage flags, each naming its rule; repair items are keyed to surfaces.
+The worst gate was the photo-tier footprint: +30 % on our home, with the kitchen at +145 % and the bathroom at
++123 %. The cause was that a room included all the floor its cameras could see, including floor seen through
+doorways. The fix bounds each room by its own walls, using only walls that lie beyond the outermost camera.
+After the fix the footprint is +7.5 % and the kitchen and bathroom are +42 % and +27 %. Per-room wall lengths
+still fail. Details: `docs/fix_loop.md`.
 
 ## 8. Known failure modes
 
-- **Room shape from a few photos** is the main photo-tier error. Three targeted fixes each repaired the room
-  they aimed at and broke others (low furniture as floor, filling furniture notches, UniDepth metric depth);
-  see `docs/TRADEOFFS.md`.
-- **Mirrors and glass:** video poses flip 110-165° in front of the sample bathroom mirror; LiDAR confidence
-  drops at the glass shower; mirrors can create phantom openings. Pose-flip rejection and confidence-2 depth
-  reduce this; it is not solved.
-- **Wet-look / shiny floors:** reflections and tile grout fool the damage detector; floors keep only mould.
-- **Low light:** the 9 s bathroom clip with one small light gave 5.5 m² for a 2.87 m² room (+92 %).
-- **Jagged outlines:** furniture along walls makes floor edges ragged, so outlines have many short walls, and
-  repeatability across two scans of the flat fails (0/14 walls within 1 cm).
-- **Cracks** are found in 1 of 4 public crack photos; damage seen in only one photo is not reported.
-- **Video:** only the most consistent piece of a long walk is used (pose tracking breaks into pieces).
+- **Room shape from a few photos** is the main photo-tier error (per room −21 % to +42 %).
+- **Video poses** break up on long walks, so only the longest consistent piece is used.
+- **Mirrors and glass** flip video poses and can look like openings.
+- **Shiny floors** fool the damage detector, so floors only report mould.
+- **Low light**: a 9 s bathroom clip with one small light gave +92 % area.
+- **Furniture along walls** makes outlines jagged, which also breaks repeatability.
+- **Cracks** are found in 1 of 4 public crack photos. Damage seen in only one photo is dropped.
+- **Doors** are only measured when a photo shows the whole door straight on.
 
-## 9. Models and data used (disclosure)
-VGGT-1B (Meta; non-commercial research licence), Depth Anything V2 Metric-Indoor-Large (CC-BY-NC-4.0),
-Grounding DINO base (Apache-2.0), SAM 2.1 hiera-small (Apache-2.0), OWLv2 base (Apache-2.0, optional
-detector); all pretrained and run locally, weights fetched by `scripts/fetch_weights.py`. Experiments only:
-UniDepth V2 (CC BY-NC 4.0) and YOLO11n-seg (Ultralytics, AGPL-3.0) fine-tuned on the Ultralytics crack-seg
-dataset; public damage photos from Wikimedia Commons (licences in `data/public_damage/credits.txt`). Data: the provided Stray Scanner sample captures (no ground
-truth); our own Samsung Galaxy M53 photos/videos with tape measurements (no iPhone was available).
+## 9. Models and data
+
+All models are pretrained, run locally, and are downloaded by `scripts/fetch_weights.py`.
+- VGGT-1B (Meta, non-commercial research licence): poses and depth for video and photos.
+- Depth Anything V2 Metric-Indoor-Large (CC-BY-NC-4.0): metric scale.
+- Grounding DINO base (Apache-2.0) and SAM 2.1 hiera-small (Apache-2.0): damage, doors and windows.
+- OWLv2 base (Apache-2.0): optional alternative damage detector.
+- Tried and not used: UniDepth V2 (CC-BY-NC-4.0); YOLO11n-seg (AGPL-3.0) fine-tuned on Ultralytics crack-seg.
+
+Data: the three Stray Scanner sample captures provided with the brief (no ground truth), our own Galaxy M53
+photos and videos with tape measurements, and 10 public damage photos from Wikimedia Commons (licences in
+`data/public_damage/credits.txt`).
