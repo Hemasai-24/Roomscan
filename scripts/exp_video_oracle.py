@@ -4,6 +4,7 @@ modes:  baseline   - the shipped video tier (chained VGGT chunks, Depth Anything
         scale      - same chunks/segments, TRUE scale (median LiDAR/VGGT depth ratio)
         pose       - LiDAR camera poses for all picked frames, VGGT depth x Depth Anything scale
         pose_scale - LiDAR camera poses, VGGT depth x TRUE scale
+        pose_framescale - LiDAR poses, each frame's VGGT depth scaled to LiDAR on its own (chunk scale drift removed)
         all        - LiDAR poses + LiDAR depth of the picked frames (only frame picking + back end left)
 
 usage: python scripts/exp_video_oracle.py <stray_capture_dir> <out_dir> <mode> [<mode> ...]"""
@@ -71,6 +72,16 @@ def build(mode, cap, frames_idx, imgs, out, runner, metric, bias):
                                   [merged["conf"][k] for k in sub], bias)
         return true, da
 
+    if mode == "pose_framescale":
+        keep = np.arange(len(order))
+        per = np.array([oracle_scale(merged["depth"][k], merged["conf"][k], lid[order[k]][0]) for k in keep])
+        info = {"frame_scale_rel_spread": round(float(1.4826 * np.median(np.abs(per - np.median(per))) / np.median(per)), 4),
+                "frame_scale_min_max": [round(float(per.min()), 4), round(float(per.max()), 4)], "frames_used": len(keep)}
+        cap_dir = out / "capture"
+        _relevel_and_write(cap_dir, [merged["depth"][k] * per[j] for j, k in enumerate(keep)],
+                           _confidence_maps([merged["conf"][k] for k in keep]),
+                           [lid[order[k]][2] for k in keep], K, imgs[order[keep]], relevel=False)
+        return cap_dir, info
     if mode in ("pose", "pose_scale"):
         keep = np.arange(len(order))
         true, da = scales(keep)
@@ -136,7 +147,8 @@ def main():
         render(V, out / "plan")
         summary, rows = evaluate(L, V, cap_dir.parent.name)
         table[mode] = {**{k: summary.get(k) for k in KEYS}, **{k: info.get(k) for k in
-                       ("da_scale_err_pct", "frames_used", "pose_segments")}}
+                       ("da_scale_err_pct", "frames_used", "pose_segments", "frame_scale_rel_spread",
+                                                       "frame_scale_min_max")}}
         (out / "eval.json").write_text(json.dumps({"summary": summary, "rows": rows}, indent=2, default=float))
         print(mode, json.dumps(table[mode], default=float), flush=True)
     (out_root / "oracle_table.json").write_text(json.dumps(table, indent=2, default=float))
