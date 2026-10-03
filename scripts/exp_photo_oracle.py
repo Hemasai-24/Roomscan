@@ -101,14 +101,15 @@ def main():
     out, cap_dir, modes = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3:]
     ref = json.loads((out / "lidar" / "plan.json").read_text())
     cap = load_stray(cap_dir)
-    models = Models()
+    models = None if all(m.split("+")[0].startswith("all") for m in modes) else Models()   # "all" needs no model
     table = {}
     for mode in modes:
         d = out / f"oracle_{mode}"
         log = {}
-        base = mode.replace("_register", "") if mode != "register" else "baseline"
+        parts = mode.replace("_register", "+register").split("+")       # e.g. "all+register+robust"
+        base = "baseline" if parts[0] == "register" else parts[0]
         plan = run_photos(out / "rooms", d, reconstruct=make_reconstruct(base, models, cap, out / "rooms", log),
-                          register=mode.endswith("register"))
+                          register="register" in parts, robust_links="robust" in parts)
         validate(plan)
         d.mkdir(parents=True, exist_ok=True)
         (d / "plan.json").write_text(json.dumps(plan, indent=2))

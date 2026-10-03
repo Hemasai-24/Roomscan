@@ -72,9 +72,10 @@ def _room_damage(m, detect):
     return annotate(found, {rid: m["room"]}, {rid: g["angle"]})
 
 
-def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None, register=False):
+def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None, register=False, robust_links=False):
     """register=True (experimental, off by default): place linked rooms from matched 3D points
-    (roomscan/photo_register.py) instead of door-to-door guessing."""
+    (roomscan/photo_register.py) instead of door-to-door guessing.
+    robust_links=True (experimental fix, off by default): do not count RANSAC masks of failed fits as matches."""
     t0 = time.time()
     path, out_dir = Path(path), Path(out_dir)
     folders = room_folders(path)
@@ -117,7 +118,7 @@ def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None, regis
                 found += _room_damage(m, detect)
             else:
                 warnings.append(f"{m['room']['id']}: no fitted surfaces (fallback room) - damage not checked")
-    links = room_links(images)
+    links = room_links(images, robust_masks=robust_links)
     reg_fn = None
     if register:
         from roomscan.photo_register import register_rooms

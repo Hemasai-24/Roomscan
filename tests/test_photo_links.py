@@ -11,6 +11,21 @@ def _texture(seed, size=180):
     return np.dstack([t, np.roll(t, 7, 0), np.roll(t, 13, 1)])
 
 
+def test_failed_fundamental_fit_mask_is_not_counted(monkeypatch):
+    """cv2.findFundamentalMat returns F=None with an uninitialised mask when it fails; that garbage must not
+    count as matches (it inflated links to >1000 'matches' from 13 real ones)."""
+    from roomscan import photo_links as pl
+    garbage = np.full((13, 1), 253, np.uint8)
+    monkeypatch.setattr(pl.cv2, "findFundamentalMat", lambda *a, **k: (None, garbage))
+    monkeypatch.setattr(pl.cv2, "findHomography", lambda *a, **k: (None, np.full((13, 1), 77, np.uint8)))
+    rng = np.random.default_rng(0)
+    d = rng.random((13, 128)).astype(np.float32)
+    pts = rng.random((13, 2)).astype(np.float32) * 300
+    fa, fb = (pts, d), (pts + 1, d + 1e-3 * rng.random(d.shape).astype(np.float32))
+    assert pl._inliers(fa, fb, cv2.BFMatcher(cv2.NORM_L2), robust_masks=True) == 0
+    assert pl._inliers(fa, fb, cv2.BFMatcher(cv2.NORM_L2)) > 13          # shipped default (bug kept for the record)
+
+
 def _photo(base_seed, patch=None, at=(100, 150), size=(392, 518)):
     w, h = size
     img = np.full((h, w, 3), 200, np.uint8)
