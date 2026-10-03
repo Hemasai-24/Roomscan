@@ -25,6 +25,25 @@ SAM2_MODEL = "facebook/sam2.1-hiera-small"
 HF_PATTERNS = ["*.json", "*.safetensors", "*.txt", "*.md"]
 
 
+# Optional (--unidepth): UniDepth V2 ViT-S, focal-aware metric depth (ROOMSCAN_METRIC_DEPTH=unidepth).
+# Code: CC BY-NC 4.0, pinned commit; weights from Hugging Face.
+UNIDEPTH_COMMIT = "8d8cfe4c7ee15297099983607febf0d4f32eb3d6"
+UNIDEPTH_MODEL = "lpiccinelli/unidepth-v2-vits14"
+
+
+def fetch_unidepth():
+    import io
+    import tarfile
+    import urllib.request
+    dest = THIRD / "UniDepth"
+    if not dest.exists():
+        url = f"https://codeload.github.com/lpiccinelli-eth/UniDepth/tar.gz/{UNIDEPTH_COMMIT}"
+        with tarfile.open(fileobj=io.BytesIO(urllib.request.urlopen(url).read()), mode="r:gz") as t:
+            t.extractall(THIRD)
+        (THIRD / f"UniDepth-{UNIDEPTH_COMMIT}").rename(dest)
+    print(snapshot_download(UNIDEPTH_MODEL, local_dir=WEIGHTS / "unidepth-v2-vits14"))
+
+
 def main():
     WEIGHTS.mkdir(exist_ok=True)
     THIRD.mkdir(exist_ok=True)
@@ -35,6 +54,8 @@ def main():
     print(snapshot_download(DEPTH_MODEL, local_dir=WEIGHTS / "da2-metric-indoor-large"))
     print(snapshot_download(GDINO_MODEL, local_dir=WEIGHTS / "gdino-base", allow_patterns=HF_PATTERNS))
     print(snapshot_download(SAM2_MODEL, local_dir=WEIGHTS / "sam2.1-small", allow_patterns=HF_PATTERNS))
+    if "--unidepth" in sys.argv:
+        fetch_unidepth()
 
 
 if __name__ == "__main__":

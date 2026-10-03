@@ -76,7 +76,11 @@ class UniDepthMetric:
             if code.exists():
                 sys.path.insert(0, str(code))
                 break
-        sys.modules.setdefault("wandb", types.ModuleType("wandb"))   # imported by UniDepth for training logs only
+        if "wandb" not in sys.modules:                 # imported by UniDepth for training logs only
+            import importlib.machinery
+            stub = types.ModuleType("wandb")
+            stub.__spec__ = importlib.machinery.ModuleSpec("wandb", None)
+            sys.modules["wandb"] = stub
         from unidepth.models import UniDepthV2
         w = root / "weights" / "unidepth-v2-vits14"
         self.torch = torch
