@@ -27,6 +27,12 @@ widths/heights assigned assuming "width first"; sill heights and a second ceilin
 damage is small (stain 9 × 6 cm, crack 8 cm). The fix-loop rule (v2) was refined while looking at this same
 capture (see `docs/fix_loop.md`).
 
+**Tried and rejected (measured on our home):** sharing doorway views between rooms automatically (branch
+`auto-doorway-share`). Only hall↔kitchen had enough feature matches (28) to be detected; bedroom and bathroom
+stayed unconnected, and the kitchen grew to +229 % because it absorbed hall floor from the shared photo. The
+morning experiment's 3/3 connections needed the *identical* doorway photo placed in both folders by hand —
+so the capture protocol asks for that, and automatic detection remains future work.
+
 ## Not done (and why)
 | Requirement | Status | Why |
 |---|---|---|
