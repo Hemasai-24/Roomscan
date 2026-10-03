@@ -73,6 +73,8 @@ if [ -d "$M53" ]; then
     b=$(basename "${v%.*}")
     step "m53_video_$b" $PY run.py "$v" --out "outputs/m53/video_$b"
   done
+  step m53_doorway_shared bash scripts/make_doorway_shared.sh
+  step m53_photo_protocol $PY run.py data/raw/m53_doorway_shared --tier photo --out outputs/m53/photo_protocol
   step m53_score $PY scripts/score_m53.py outputs/fix_loop/after_photo_v2/plan.json
 else
   echo "== m53: $M53 not found (python scripts/fetch_data.py) - skipped"

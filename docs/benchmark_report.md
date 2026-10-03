@@ -35,7 +35,7 @@ Not possible (no LiDAR iPhone): own LiDAR captures, LiDAR-tier tape accuracy, Po
 | Calibration (truth inside the 95 % range) | 4/4 room areas, 16/16 walls — **but the ranges are very wide** (area lower bound 0) | honest, not useful |
 
 **Same photos, captured as the protocol now asks** (each doorway photo copied into both rooms' folders;
-`data/raw/m53_doorway_shared`, made from the same 24 photos by copying 3 doorway shots into the hall folder):
+`data/raw/m53_doorway_shared`, built by `scripts/make_doorway_shared.sh`: the same 24 photos with 3 doorway shots also copied into the hall folder):
 **all 3 true connections found (hall ↔ bedroom, kitchen, bathroom), 0 rooms unplaced, 0 overlap, total
 footprint +6 %** (bedroom −21 %, hall +10 %, kitchen +42 %, bathroom +27 %). Output: `outputs/m53/photo_protocol/`.
 The stitch row's adjacency part passes with this protocol; per-room wall lengths still fail.
