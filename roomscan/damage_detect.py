@@ -104,6 +104,18 @@ class GDinoSam2:
                  "mask": masks[i, int(best[i])].numpy().astype(bool)}
                 for i, (l, s, b) in enumerate(zip(labels, res["scores"].tolist(), boxes))]
 
+    def boxes(self, image, prompt, threshold=0.3):
+        """Boxes only (no masks) for a free-text prompt, e.g. "door. window."."""
+        torch = self.torch
+        with torch.no_grad():
+            inp = self.gp(images=image, text=prompt, return_tensors="pt").to(self.device)
+            res = self.gp.post_process_grounded_object_detection(
+                self.gm(**inp), inp.input_ids, threshold=threshold, text_threshold=threshold,
+                target_sizes=[image.shape[:2]])[0]
+        labels = res.get("text_labels", res["labels"])
+        return [{"label": str(l), "score": float(sc), "box": tuple(b.tolist())}
+                for l, sc, b in zip(labels, res["scores"].tolist(), res["boxes"])]
+
     def close(self):
         del self.gm, self.sm
         self.torch.cuda.empty_cache()
@@ -128,3 +140,11 @@ def release_detectors():
 def detect_damage(image_rgb, detector="gdino+sam2", threshold=THRESHOLD, root=ROOT):
     """image_rgb: upright uint8 (H,W,3) -> [{"class", "score", "mask", "box"}]."""
     return postprocess(get_detector(detector, root)(np.ascontiguousarray(image_rgb)), image_rgb.shape, threshold)
+
+
+OPENING_PROMPT = "door. window."
+OPENING_THRESHOLD = 0.3
+
+
+def detect_openings(image_rgb, detector="gdino+sam2", root=ROOT):
+    return get_detector(detector, root).boxes(np.ascontiguousarray(image_rgb), OPENING_PROMPT, OPENING_THRESHOLD)

@@ -64,10 +64,14 @@ def camera_path(cap, angle, step=0.05):
 def add_damage(plan, cap, capture_dir, geoms, tier, detect=None):
     """geoms: [(room_id, surfaces_dict, edges, verts, angle)] -> plan damage, flags and scope filled in."""
     from roomscan.damage_pipeline import (annotate, damage_for_capture, filter_damage, finish_plan, free_gpu,
-                                          room_surface_list)
+                                          openings_for_capture, place_openings, room_surface_list)
     t0 = time.time()
     free_gpu()
     surfaces = [x for rid, s, edges, verts, angle in geoms for x in room_surface_list(rid, s, edges, angle, verts)]
+    if detect is None:                      # real detector loaded: doors/windows from the image as well
+        seen = openings_for_capture(cap, capture_dir, surfaces, tier)
+        place_openings({r["id"]: r for r in plan["rooms"]}, seen, tier)
+        plan["meta"]["image_openings"] = len(seen)
     measured = damage_for_capture(cap, capture_dir, surfaces, tier, detect=detect)
     found = filter_damage(measured, tier)
     annotate(found, {r["id"]: r for r in plan["rooms"]}, {g[0]: g[4] for g in geoms})

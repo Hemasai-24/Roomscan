@@ -186,3 +186,79 @@ def release():
     from roomscan.damage_detect import release_detectors
     release_detectors()
     free_gpu()
+
+
+def box_to_original(box, orig_shape, k):
+    """A box found in np.rot90(image, k) back in the original image's pixel coordinates."""
+    h, w = orig_shape[:2]
+    coords = np.rot90(np.stack(np.meshgrid(np.arange(w), np.arange(h)), -1), k)
+    rh, rw = coords.shape[:2]
+    x0, y0, x1, y1 = box
+    cs = [coords[int(np.clip(y, 0, rh - 1)), int(np.clip(x, 0, rw - 1))] for x in (x0, x1) for y in (y0, y1)]
+    xs, ys = [c[0] for c in cs], [c[1] for c in cs]
+    return float(min(xs)), float(min(ys)), float(max(xs)), float(max(ys))
+
+
+def openings_for_capture(cap, cap_dir, surfaces, tier, detect=None):
+    """Doors/windows measured from the image (roomscan/visual_openings.py) on the same views as damage."""
+    from roomscan.visual_openings import measure_openings
+    if not surfaces:
+        return []
+    if detect is None:
+        from roomscan.damage_detect import detect_openings as detect
+    frames = {f.index: f for f in cap.frames}
+    idx = pick_view_indices(cap)
+    imgs = _frame_images(cap_dir, idx, cap.depth_size)
+    views = []
+    for i in idx:
+        if i not in imgs:
+            continue
+        f = frames[i]
+        k = upright_turns(f.T_wc)
+        img = imgs[i]
+        dets = detect(np.ascontiguousarray(np.rot90(img, k)))
+        sx, sy = cap.depth_size[0] / img.shape[1], cap.depth_size[1] / img.shape[0]   # boxes to depth-image pixels
+        for d in dets:
+            x0, y0, x1, y1 = box_to_original(d["box"], img.shape, k)
+            d["box"] = (x0 * sx, y0 * sy, x1 * sx, y1 * sy)
+        views.append({"K": f.K, "T_wc": f.T_wc, "detections": dets})
+    return measure_openings(views, surfaces, tier)
+
+
+def place_openings(rooms_by_id, found, tier):
+    """Attach image-measured openings to their rooms. Photo/video: they replace the depth-carved openings of
+    that room (mostly phantoms there). LiDAR: added only where no carved opening overlaps (e.g. closed doors)."""
+    by_room = {}
+    for o in found:
+        by_room.setdefault(o["room_id"], []).append(o)
+    for rid, ops in by_room.items():
+        room = rooms_by_id.get(rid)
+        if room is None:
+            continue
+        walls = {w["id"]: w for w in room["walls"]}
+        placed = []
+        for o in ops:
+            w = walls.get(o["wall_id"])
+            if w is None:
+                continue
+            a, b = np.array(w["start"], float), np.array(w["end"], float)
+            horizontal = abs(b[0] - a[0]) >= abs(b[1] - a[1])
+            k = 0 if horizontal else 1
+            sign = 1.0 if b[k] >= a[k] else -1.0
+            off = (o["centre_along"] - a[k]) * sign - o["width"]["value"] / 2
+            placed.append({"wall_id": o["wall_id"], "type": o["type"], "offset_along_wall": round(max(off, 0.0), 4),
+                           "width": o["width"], "height": o["height"], "sill_height": o["sill_height"],
+                           "source": "image", "n_views": o["n_views"]})
+        if tier in ("photo", "video"):
+            room["openings"] = placed
+        else:
+            keep = list(room["openings"])
+            for p in placed:
+                clash = any(c["wall_id"] == p["wall_id"] and
+                            abs((c["offset_along_wall"] + c["width"]["value"] / 2) -
+                                (p["offset_along_wall"] + p["width"]["value"] / 2)) < 0.5 for c in keep)
+                if not clash:
+                    keep.append(p)
+            room["openings"] = keep
+        for j, o in enumerate(room["openings"]):
+            o["id"] = f"{rid}_o{j}"

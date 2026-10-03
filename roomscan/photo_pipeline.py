@@ -65,6 +65,18 @@ def _model_reconstruct():
     return reconstruct
 
 
+def _room_openings(m):
+    """Doors/windows from the photos, measured in the room's own frame before stitching (stitching joins
+    rooms at their doors, so better doors also mean better joins)."""
+    from roomscan.damage_pipeline import openings_for_capture, place_openings, room_surface_list
+    from roomscan.load_capture import load_stray
+    g, rid = m["geometry"], m["room"]["id"]
+    surfaces = room_surface_list(rid, g["s"], g["edges"], g["angle"], g["verts"])
+    seen = openings_for_capture(load_stray(m["cap_dir"]), m["cap_dir"], surfaces, "photo")
+    place_openings({rid: m["room"]}, seen, "photo")
+    return len(seen)
+
+
 def _room_damage(m, detect):
     """Damage for one photo room, measured in that room's own frame (before stitching moves it)."""
     from roomscan.damage_pipeline import annotate, damage_for_capture, filter_damage, room_surface_list
@@ -116,6 +128,8 @@ def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None):
         free_gpu()
         for m in infos:
             if "geometry" in m:
+                if detect is None:              # real detector: also measure doors/windows from the photos
+                    _room_openings(m)
                 found += _room_damage(m, detect)
             else:
                 warnings.append(f"{m['room']['id']}: no fitted surfaces (fallback room) - damage not checked")
