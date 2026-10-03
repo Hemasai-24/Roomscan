@@ -46,7 +46,7 @@ repeatability, wall lengths). The fifth is the comparison with a consumer app, w
 | # | Gate | Evidence | Status |
 |---|---|---|---|
 | 2.15 | Openings within 2 cm on 85 % | 0 of 9; doors from straight-on photos are 3-10 cm too wide, windows wrong | Not met |
-| 2.16 | Ceiling height within 1.5 cm | ceilings not in our photos or videos; wide ranges | Not met |
+| 2.16 | Ceiling height within 1.5 cm; say whether biased or unrepeatable | both: video 0.6-0.9 m low, photos 0.5-1.6 m high, bedroom takes differ by 25 cm; no capture saw the ceiling | Not met |
 | 2.17 | Same room twice within 1 cm per wall | video 0 of 3 walls; LiDAR sample 0 of 14 | Not met |
 | 2.18 | Drift method and on/off comparison | technical report section 5 | Met |
 | 2.19 | Photo stitch: adjacency, no overlap, footprint ±8 % | 3 of 3 door connections, right order, no overlap, +6 % | Met |

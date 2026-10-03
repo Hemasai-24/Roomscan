@@ -41,7 +41,7 @@ photos place them. No ceiling was visible in the photos.*
 | All rooms placed, correct connections, no overlap | 3 of 3 door connections, rooms in the right order, no overlap | yes |
 | Wall lengths within ±8 % | 2 of 16 walls; mean error 74 cm | no |
 | Door and window widths within 2 cm on 85 % | doors 3-10 cm too wide (table below); windows still wrong; 0 of 9 within 2 cm | no |
-| Ceiling height within 1.5 cm | ceiling not in the photos; values 3.3-4.3 m against 2.74 m | no |
+| Ceiling height within 1.5 cm | ceiling not in the photos; values 3.3-4.3 m against 2.74 m. Both biased and unrepeatable (see section 2) | no |
 | Truth inside the 95 % range | 4 of 4 areas, 15 of 16 walls, but the ranges are very wide | yes |
 
 | Door | Tape | Measured from its photo | Error | Tape inside 95 % range |
@@ -72,7 +72,9 @@ found.
 
 The video gate (walls within ±3 %) fails. Repeatability also fails: the bedroom's walls differ by 61, 99 and
 113 cm between the two takes. The ceiling was not filmed; the true 2.74 m is inside every reported range, but
-the ranges are wide. The cause is camera tracking: on the sample, giving the video tier the true camera poses
+the ranges are wide. Ceiling height is therefore both biased and unrepeatable: video reads 1.85-2.10 m (0.6-0.9 m
+low), photos read 3.3-4.3 m (0.5-1.6 m high), and the two bedroom video takes differ by up to 25 cm. The cause
+is the same in every case: no capture saw the ceiling, so the value is only the highest wall point seen. The cause is camera tracking: on the sample, giving the video tier the true camera poses
 brings the footprint to +3.6 %.
 
 ## 3. Damage on our home
