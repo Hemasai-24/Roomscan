@@ -55,3 +55,16 @@ def test_parallel_walls_12cm_apart_keep_both():
     p = room_points(fp, 2.5)
     poly, edges, _ = footprint(classify_planes(extract_planes(p, min_inliers=800)))
     assert min(abs(e.end - e.start) for e in edges) >= 0.05
+
+
+def test_shallow_furniture_bump_does_not_add_walls():
+    # a 4 x 3 room whose floor is cut by a 15 cm deep, 1.2 m long cabinet along one wall
+    from roomscan.room_outline import Grid, outline_from_mask
+    c = classify_planes(extract_planes(room_points([(0, 0), (4, 0), (4, 3), (0, 3)], 2.5)))
+    cell = 0.05
+    g = Grid(np.array([-0.5, -0.5]), cell, (90, 110))
+    mask = np.zeros(g.shape, bool)
+    mask[int(0.5 / cell):int(3.5 / cell), int(0.5 / cell):int(4.5 / cell)] = True        # x 0..4, z 0..3
+    mask[int(0.5 / cell):int(0.65 / cell), int(1.5 / cell):int(2.7 / cell)] = False     # bump 15 cm deep
+    verts, edges = outline_from_mask(mask, g, c["walls"], 0.0)
+    assert len(edges) == 4
