@@ -32,9 +32,10 @@ def evaluate(L, V, name):
                      "err_pct": round(100 * (lv - ll) / ll, 1),
                      "lidar_inside_video_range": bool(w["length"]["lo"] <= ll <= w["length"]["hi"])})
     vpoly = unary_union([Polygon(r["polygon"]) for r in V["rooms"]])
-    vpoly_in_l = Polygon(np.array(vpoly.exterior.coords) @ R2.T + t) if vpoly.geom_type == "Polygon" else None
-    lpoly = unary_union([Polygon(r["polygon"]) for r in L["rooms"]])
-    iou = None if vpoly_in_l is None else round(vpoly_in_l.intersection(lpoly).area / vpoly_in_l.union(lpoly).area, 3)
+    from shapely import affinity
+    vpoly_in_l = affinity.affine_transform(vpoly.buffer(0), [R2[0, 0], R2[0, 1], R2[1, 0], R2[1, 1], t[0], t[1]])
+    lpoly = unary_union([Polygon(r["polygon"]).buffer(0) for r in L["rooms"]])
+    iou = round(vpoly_in_l.intersection(lpoly).area / vpoly_in_l.union(lpoly).area, 3)   # works for multi-room plans
     long_rows = [r for r in rows if r["lidar_m"] >= 1.0]
     summary = {"capture": name, "video_rooms": len(V["rooms"]), "lidar_rooms": len(L["rooms"]),
                "video_area_m2": round(vpoly.area, 2), "lidar_area_m2": round(lpoly.area, 2),
