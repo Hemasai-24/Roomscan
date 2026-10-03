@@ -63,7 +63,7 @@ tracking keeps only 32-35 % of a walk.
 | Staged crack (8 cm) | **not detected** |
 | False alarms (photo tier, whole home) | 12 regions before the damage rules → **0** after (2 views, min area, stricter peeling paint) |
 | Concealed-damage flags | 3 × R2 fired on false alarms before the rules; 0 after |
-| Detector on public damage photos | 5 of 10 found (Grounding DINO @ 0.30); OWLv2 4/10, `docs/TRADEOFFS.md` |
+| Detector on public damage photos | 5 of 10 found (Grounding DINO @ 0.30); OWLv2 4/10 (see `docs/TRADEOFFS.md`) |
 
 ## 2. LiDAR tier on the provided sample (no ground truth)
 

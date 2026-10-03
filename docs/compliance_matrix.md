@@ -27,7 +27,7 @@ head-to-head against a consumer app, which needed a LiDAR iPhone that was not av
 | 2.4 | Concealed-damage flags with the rule that fired | `roomscan/damage_rules.py` | Rules R1-R5; every flag names its rule, damage ids and surfaces | Met |
 | 2.5 | Scope line items keyed to surfaces | `roomscan/repair_scope.py` | Each item has a surface id, action, quantity with range | Met |
 | 2.6 | A confidence interval on every measurement | `roomscan/measurements.py` | Every number is `{value, lo, hi, unit}`; tape truth inside 4/4 room areas and 16/16 walls | Met |
-| 2.7 | One command per capture | `run.py` | `python run.py <input>`, a Stray folder, a video file, or a folder of room folders | Met |
+| 2.7 | One command per capture | `run.py` | `python run.py <input>`, where the input is a Stray folder, a video file, or a folder of room folders | Met |
 | 2.8 | JSON to the published schema | `schema/plan.schema.json`, `roomscan/save_plan.py` | Validated on every run | Met |
 | 2.9 | Rendered plan | `roomscan/draw_plan.py` | `plan.png` / `plan.svg` with dimensions, doors, windows, damage | Met |
 
