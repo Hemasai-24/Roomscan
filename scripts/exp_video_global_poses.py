@@ -43,7 +43,9 @@ def score(T_est, T_true):
 
 def main():
     cap_dir, out = Path(sys.argv[1]), Path(sys.argv[2])
-    ns = [int(x) for x in sys.argv[3:]] or [20]
+    args = sys.argv[3:] or ["20"]
+    ns = [int(x) for x in args if x.isdigit()]
+    chunkings = [tuple(map(int, x.split(":")[1:])) for x in args if x.startswith("chained:")]   # chained:20:10
     cap = load_stray(cap_dir)
     by = {f.index: f for f in cap.frames}
     video = cap_dir / "rgb.mp4"
@@ -61,6 +63,17 @@ def main():
                                       "share_of_walk": round(len(keep) / len(idx), 3), "segments": int(merged["segments"]),
                                       "seconds": round(time.time() - t0, 1)}
     print("chained", res["chained_largest_segment"], flush=True)
+    for chunk, overlap in chunkings:
+        t0 = time.time()
+        m = run_chunks(runner, imgs, chunk=chunk, overlap=overlap)
+        sg = np.asarray(m["seg"])
+        od = np.asarray(m["idx"])
+        kp = np.where(sg == int(np.argmax(np.bincount(sg))))[0]
+        key = f"chained_{chunk}_{overlap}"
+        res[key] = {**score([m["T"][k] for k in kp], [true[od[k]] for k in kp]),
+                    "share_of_walk": round(len(kp) / len(idx), 3), "segments": int(m["segments"]),
+                    "seconds": round(time.time() - t0, 1)}
+        print(key, res[key], flush=True)
     for n in ns:
         t0 = time.time()
         sel = np.linspace(0, len(idx) - 1, n).round().astype(int)
