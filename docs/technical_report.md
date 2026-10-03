@@ -11,6 +11,16 @@ images, camera poses and camera intrinsics in metres, saved in Stray Scanner's f
 builds the plan the same way for every tier. The tiers differ only in the front end and in how wide their
 ranges are, so any fix to the back end helps all three.
 
+![Photo tier on our home](images/home_photo_plan.png)
+
+*Figure 1. Photo tier on our home (24 photos, Galaxy M53). Room order and connections are right; room shapes
+and the doors and windows are not (see section 8 and the benchmark report).*
+
+![LiDAR tier on the sample flat](images/lidar_floor_plan.png)
+
+*Figure 2. LiDAR tier on the provided sample flat. The flat is split into 13 pieces, more than its real rooms,
+because furniture and short wall gaps break rooms apart. There is no ground truth for this flat.*
+
 ```
 LiDAR scan   ──────────────────────────────────────────┐
 Video        ── sharp frames ── VGGT + Depth Anything ──┼── depth + poses + intrinsics (metres)
@@ -137,7 +147,10 @@ still fail. Details: `docs/fix_loop.md`.
 - **Low light**: a 9 s bathroom clip with one small light gave +92 % area.
 - **Furniture along walls** makes outlines jagged, which also breaks repeatability.
 - **Cracks** are found in 1 of 4 public crack photos. Damage seen in only one photo is dropped.
-- **Doors** are only measured when a photo shows the whole door straight on.
+- **Doors and windows on our home are wrong.** The photo tier found 7 openings, each from a single photo. One
+  matches a real opening but is more than 2 cm off; the other 6 match nothing, and most real doors are
+  missing. A door or window is only measured well when a photo shows all of it straight on, and our photos
+  did not.
 
 ## 9. Models and data
 
