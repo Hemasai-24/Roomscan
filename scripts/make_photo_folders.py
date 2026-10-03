@@ -19,7 +19,7 @@ from shapely.geometry import Point, Polygon
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from roomscan.load_capture import load_stray                     # noqa: E402
 from roomscan.photo_folders import EXIF_IFD, FOCAL_35MM, FULL_FRAME_DIAGONAL_MM   # noqa: E402
-from roomscan.photo_sim import pick_door_view, pick_room_views   # noqa: E402
+from roomscan.photo_sim import pick_door_view, pick_doorway_view, pick_room_views   # noqa: E402
 from roomscan.pipeline import run_lidar                          # noqa: E402
 from roomscan.room_outline import to_plan                        # noqa: E402
 from roomscan.save_plan import validate                          # noqa: E402
@@ -68,12 +68,34 @@ def main():
                 sel.append(k)
         picks[room["id"]] = sorted(sel)[:MAX_PHOTOS] if len(sel) > MAX_PHOTOS else sorted(sel)
         print(f"{room['id']}: {len(idx)} frames inside, {len(picks[room['id']])} photos")
+    if "--doorway-shared" in sys.argv:          # experimental protocol: one doorway photo in both rooms' folders
+        rooms = {r["id"]: r for r in plan["rooms"]}
+        shared = {rid: [] for rid in picks}
+        for a in plan["adjacency"]:
+            if a["room_a"] not in picks or a["room_b"] not in picks:
+                continue
+            door = next((d for d in door_frames(rooms[a["room_a"]]) if d["id"] == a["via"]), None)
+            if door is None:
+                continue
+            k = pick_doorway_view(np.arange(len(cams)), cams, fwd, sharp, door["mid"])
+            if k is None:
+                print(f"{a['room_a']}-{a['room_b']}: no frame in the doorway")
+                continue
+            for rid in (a["room_a"], a["room_b"]):
+                shared[rid].append(k)
+            print(f"{a['room_a']}-{a['room_b']}: doorway photo {k} shared")
+        for rid, ks in shared.items():                  # doorway photos first; room views fill the rest
+            ks = sorted(set(ks))[:MAX_PHOTOS]
+            picks[rid] = ks + [k for k in picks[rid] if k not in ks][:MAX_PHOTOS - len(ks)]
     fx_rgb = cap.frames[0].K[0, 0] * 1920 / cap.depth_size[0]           # focal at 1920 px (landscape width)
     f35 = fx_rgb * (W / 1440) * FULL_FRAME_DIAGONAL_MM / np.hypot(W, H)  # upright 1440-wide frame -> W
-    need = {k: rid for rid, ks in picks.items() for k in ks}
+    need = {}
+    for rid, ks in picks.items():
+        for k in ks:
+            need.setdefault(k, []).append(rid)        # a shared doorway photo goes to two rooms
     for i, img in read_frames(cap_dir / "rgb.mp4", (W, H), rotate=90):
-        if i in need:
-            d = out / "rooms" / need[i]
+        for rid in need.get(i, []):
+            d = out / "rooms" / rid
             d.mkdir(parents=True, exist_ok=True)
             ex = Image.Exif()
             ex.get_ifd(EXIF_IFD)[FOCAL_35MM] = int(round(f35))

@@ -138,6 +138,36 @@ def resolve_overlap(room, placed, normal):
         k += 1
 
 
+def clip_room(room, placed):
+    """Cut the parts of `room` that lie inside already-placed rooms (a correctly placed room that over-extends
+    through a door). Walls are rebuilt from the clipped outline; each keeps the room's average relative range."""
+    from shapely.geometry import MultiPolygon
+    from shapely.geometry.polygon import orient
+    from shapely.ops import unary_union
+    rest = _poly(room).difference(unary_union([_poly(q) for q in placed]))
+    if isinstance(rest, MultiPolygon):
+        rest = max(rest.geoms, key=lambda g: g.area)
+    if rest.is_empty or rest.area < 0.05:
+        return None
+    rest = orient(rest.simplify(0.01), 1.0)                       # CCW
+    pts = [list(map(float, p)) for p in rest.exterior.coords[:-1]]
+    rel = np.mean([(w["length"]["hi"] - w["length"]["lo"]) / 2 / max(w["length"]["value"], 1e-9)
+                   for w in room["walls"] if "hi" in w["length"]] or [0.0])
+    walls, rid = [], room["id"]
+    for i in range(len(pts)):
+        L = float(np.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
+        walls.append({"id": f"{rid}_w{i}", "surface_id": f"{rid}_w{i}", "start": pts[i - 1], "end": pts[i],
+                      "length": {"value": round(L, 4), "lo": round(L * (1 - rel), 4), "hi": round(L * (1 + rel), 4),
+                                 "unit": "m"}, "plane_supported": False})
+    out = dict(room, polygon=pts, walls=walls, openings=[])     # openings referred to the old walls
+    fa = room["floor_area"]
+    if "hi" in fa:
+        r = (fa["hi"] - fa["lo"]) / 2 / max(fa["value"], 1e-9)
+        out["floor_area"] = dict(fa, value=round(rest.area, 4), lo=round(rest.area * (1 - r), 4),
+                                 hi=round(rest.area * (1 + r), 4))
+    return out
+
+
 def _registered_candidate(rooms, infos, placed_idx, tf, a, b, reg):
     """Candidate placing room b from a registration (R, t, n) of b's own frame into a's own frame,
     composed with the transform room a already received."""
@@ -203,6 +233,11 @@ def stitch(infos, links, register=None):
         (score, R, t, da, db, ov), a, b, l = best
         room = transform_room(infos[b]["room"], R, t)
         pushed = 0.0
+        clipped = clip_room(room, [rooms[p] for p in placed]) if (ov > MAX_OVERLAP and db["id"].endswith("_reg")) \
+            else None
+        if clipped is not None:                  # measured placement: keep it, cut the over-extension
+            warnings.append(f"{room['id']}: clipped {ov:.2f} m2 overlapping {rooms[a]['id']} (seen through a door)")
+            room, ov = clipped, 0.0
         if ov > MAX_OVERLAP:
             before = np.array(room["polygon"][0], float)
             room, pushed = resolve_overlap(room, [rooms[p] for p in placed], _unit(da["normal_out"]))

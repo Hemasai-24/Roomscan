@@ -157,6 +157,20 @@ def test_registration_overrides_door_guessing():
     assert adj[0]["placement"] == "registered"
 
 
+def test_registered_room_overlapping_is_clipped_not_pushed():
+    # B over-extends 0.5 m into A (floor seen through the door); registration places it correctly
+    a = make_room("A", [(0, 0), (4, 0), (4, 3), (0, 3)])
+    b = make_room("B", [(0, 0), (3.5, 0), (3.5, 3), (0, 3)])        # true B is x 4.0..7.0; it reaches 3.5
+    reg = (np.eye(2), np.array([3.5, 0.0]), 80)
+    rooms, adj, warns = stitch([info(a, [(2, 1.5)], [(1, 0)]), info(b, [(2, 1.5)], [(-1, 0)])],
+                               {(0, 1): {"matches": 80, "photo_i": 0, "photo_j": 0}},
+                               register=lambda i, j: reg if (i, j) == (0, 1) else None)
+    pb = Polygon(rooms[1]["polygon"])
+    np.testing.assert_allclose(pb.bounds, [4.0, 0.0, 7.0, 3.0], atol=1e-6)
+    assert not any("pushed" in w for w in warns) and any("clipped" in w for w in warns)
+    assert abs(sum(w["length"]["value"] for w in rooms[1]["walls"]) - 12.0) < 1e-6
+
+
 def test_registration_composes_with_moved_rooms_and_inverts():
     # A-B-C-D in a row, each registered only as (left, right) = "right is 2.2 m east of left".
     # B is the root (strongest links); A is placed by the INVERTED registration; D is placed against C,

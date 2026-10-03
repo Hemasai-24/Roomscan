@@ -31,3 +31,14 @@ def pick_door_view(idx, cams, fwd, sharp, door_mid, dist=(0.5, 5.0)):
         return None
     cand = idx[ok]
     return int(cand[np.argmax(np.asarray(sharp)[cand])])
+
+
+def pick_doorway_view(idx, cams, fwd, sharp, door_mid, radius=0.8):
+    """Experimental protocol step: the sharpest frame taken standing in a doorway (camera within `radius` of
+    the door). The same photo goes into BOTH rooms' folders, so the two rooms share an exact view."""
+    idx = np.asarray(idx)
+    d = np.linalg.norm(np.asarray(cams)[idx] - np.asarray(door_mid), axis=1)
+    cand = idx[d <= radius]
+    if not len(cand):
+        return None
+    return int(cand[np.argmax(np.asarray(sharp)[cand])])

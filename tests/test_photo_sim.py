@@ -27,3 +27,12 @@ def test_no_door_view_when_nothing_aims_at_it():
     cams = np.zeros((2, 2))
     fwd = np.array([[-1, 0], [0, -1]], float)
     assert pick_door_view(np.arange(2), cams, fwd, np.ones(2), door_mid=np.array([3.0, 0.0])) is None
+
+
+def test_doorway_photo_is_the_sharp_frame_taken_at_the_door():
+    from roomscan.photo_sim import pick_doorway_view
+    cams = np.array([[0.0, 0.0], [2.9, 1.5], [3.1, 1.4], [6.0, 1.5]])
+    fwd = np.array([[1.0, 0.0]] * 4)
+    sharp = np.array([9.0, 5.0, 7.0, 9.0])
+    assert pick_doorway_view(np.arange(4), cams, fwd, sharp, door_mid=(3.0, 1.45)) == 2
+    assert pick_doorway_view(np.arange(4), cams, fwd, sharp, door_mid=(10.0, 10.0)) is None
