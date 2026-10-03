@@ -1,6 +1,5 @@
 # Plan 3: Video Tier
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `python run.py walkthrough.mp4` (no depth, no poses) produces the same plan JSON and drawing
 as the LiDAR tier, marked `tier: "video"`, with wider ranges.

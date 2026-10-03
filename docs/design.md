@@ -1,3 +1,6 @@
+> Original design, written 2026-10-02 before any code. What was built and measured differs in places — see
+> `docs/technical_report.md` (current design) and `docs/TRADEOFFS.md` (assumptions and limitations).
+
 # Floor-Plan Pipeline — Design Spec
 
 Date: 2026-10-02 · Deadline: 2026-10-04 10:00 (~42 h) · Source brief: `Applied_AI.pdf`

@@ -16,7 +16,7 @@ from roomscan.compare_plans import align_plans, match_walls   # noqa: E402
 from roomscan.score_benchmark import load_ground_truth, score_plan   # noqa: E402
 
 GT = "data/ground_truth/own_rooms.csv"
-PHOTO_MAP = {"bedroom": "Room1_bedroom", "hall": "Room2_hall", "kitchen": "Room3_kitchen", "bathroom": "Room4_bathroom"}
+PHOTO_MAP = json.loads(Path(__file__).resolve().parents[1].joinpath("data/ground_truth/room_map.json").read_text())["photo"]
 
 
 def true_areas(gt):

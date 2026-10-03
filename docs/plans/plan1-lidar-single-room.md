@@ -3,7 +3,6 @@
 > Note (after implementation): the package `fpp/` was renamed to `roomscan/` with clearer file names
 > (see README "Code map"). Code below shows the original names.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `python run.py sample_data/single_room/c00a170fe1` produces `plan.json` (schema-valid) and `plan.svg/png` with walls, floor area, ceiling height and openings, each with a 95% interval.
 
@@ -11,7 +10,7 @@
 
 **Tech Stack:** Python 3.10, NumPy, SciPy, Open3D 0.19, OpenCV (<5), Shapely 2, jsonschema, matplotlib, pytest.
 
-**Spec:** `docs/superpowers/specs/2026-10-02-floorplan-pipeline-design.md`
+**Spec:** `docs/design.md`
 
 **Later plans (not in scope here):** Plan 2 multi-room segmentation + stitch + drift ablation; Plan 3 video tier; Plan 4 photo tier; Plan 5 damage + rules + scope; Plan 6 benchmark harness, fix loop, docs.
 

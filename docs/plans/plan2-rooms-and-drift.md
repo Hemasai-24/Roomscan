@@ -1,6 +1,5 @@
 # Plan 2: Rooms, House Plan and Drift Correction
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `python run.py <whole-floor capture>` outputs one plan with every room separated,
 measured and connected (which room opens into which), and the phone's drift corrected — with

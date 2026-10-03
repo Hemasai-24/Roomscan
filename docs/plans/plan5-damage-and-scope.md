@@ -1,6 +1,5 @@
 # Plan 5: Damage, Concealed-Damage Rules and Repair Scope
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Status:** DRAFT for the user's review (written 2026-10-03 ~01:45 while the photo tier was being built).
 

@@ -1,6 +1,5 @@
 # Plan 4: Photo Tier (per-room photo folders → one stitched whole-property plan)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `python run.py <folder of room folders>` (each subfolder = one room, 2-8 photos, no depth, no
 poses) produces ONE whole-property `plan.json` / `plan.svg` with tier `"photo"`: every room placed,
