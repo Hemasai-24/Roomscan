@@ -18,7 +18,7 @@ def _px(x, y, z=2.0):
 def _view(label, x0, x1, y_bottom, y_top):
     u0, v_top = _px(x0, y_top)
     u1, v_bot = _px(x1, y_bottom)
-    return {"K": K, "T_wc": T, "size": (256, 192),
+    return {"K": K, "T_wc": T, "size": (256, 300),            # tall enough to contain a 2 m door at 2 m
             "detections": [{"label": label, "score": 0.6, "box": (u0, v_top, u1, v_bot)}]}
 
 
@@ -32,8 +32,8 @@ def test_door_width_height_on_a_wall():
 
 
 def test_window_sill_and_merge_across_views():
-    v1 = _view("window", 0.5, 1.7, -0.5, 0.6)            # 1.2 m wide, sill 0.9 m above floor
-    v2 = _view("window", 0.52, 1.72, -0.5, 0.6)          # same window, slightly different box
+    v1 = _view("window", -0.6, 0.6, -0.5, 0.6)           # 1.2 m wide, sill 0.9 m above floor
+    v2 = _view("window", -0.58, 0.62, -0.5, 0.6)         # same window, slightly different box
     ops = measure_openings([v1, v2], [WALL], tier="lidar")
     assert len(ops) == 1 and ops[0]["n_views"] == 2 and ops[0]["type"] == "window"
     assert ops[0]["width"]["value"] == pytest.approx(1.2, abs=0.03)
@@ -88,3 +88,24 @@ def test_lidar_keeps_carved_openings_and_adds_only_new_ones():
     closed = dict(same, centre_along=3.0)
     place_openings({"r": room}, [same, closed], "lidar")
     assert len(room["openings"]) == 2 and [o["id"] for o in room["openings"]] == ["r_o0", "r_o1"]
+
+
+def test_box_cut_by_the_photo_edge_is_not_measured():
+    v = _view("door", -0.4, 0.4, -1.4, 0.6)
+    x0, y0, x1, y1 = v["detections"][0]["box"]
+    v["detections"][0]["box"] = (0.0, y0, x1, y1)                   # left edge at the image border
+    assert measure_openings([v], [WALL], tier="lidar") == []
+
+
+def test_implausible_sizes_are_rejected():
+    tiny = _view("door", -0.1, 0.1, -1.4, -1.0)                     # 0.2 x 0.4 m "door" (a cupboard knob area)
+    tall_window = _view("window", 0.5, 0.6, -1.4, 0.6)              # 0.1 m wide window
+    assert measure_openings([tiny, tall_window], [WALL], tier="lidar") == []
+
+
+def test_photo_room_with_no_image_openings_drops_the_carved_phantoms():
+    from roomscan.damage_pipeline import place_openings
+    room = {"id": "r", "walls": [{"id": "r_w0", "start": [0.0, 0.0], "end": [4.0, 0.0]}],
+            "openings": [{"id": "r_o0", "wall_id": "r_w0", "type": "window", "offset_along_wall": 0.1, "width": _M(0.6)}]}
+    place_openings({"r": room}, [], "photo")
+    assert room["openings"] == []

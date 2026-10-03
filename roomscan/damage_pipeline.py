@@ -221,14 +221,14 @@ def openings_for_capture(cap, cap_dir, surfaces, tier, detect=None):
         for d in dets:
             x0, y0, x1, y1 = box_to_original(d["box"], img.shape, k)
             d["box"] = (x0 * sx, y0 * sy, x1 * sx, y1 * sy)
-        views.append({"K": f.K, "T_wc": f.T_wc, "detections": dets})
+        views.append({"K": f.K, "T_wc": f.T_wc, "detections": dets, "size": cap.depth_size})
     return measure_openings(views, surfaces, tier)
 
 
 def place_openings(rooms_by_id, found, tier):
     """Attach image-measured openings to their rooms. Photo/video: they replace the depth-carved openings of
     that room (mostly phantoms there). LiDAR: added only where no carved opening overlaps (e.g. closed doors)."""
-    by_room = {}
+    by_room = {rid: [] for rid in rooms_by_id} if tier in ("photo", "video") else {}
     for o in found:
         by_room.setdefault(o["room_id"], []).append(o)
     for rid, ops in by_room.items():

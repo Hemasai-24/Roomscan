@@ -143,7 +143,7 @@ def detect_damage(image_rgb, detector="gdino+sam2", threshold=THRESHOLD, root=RO
 
 
 OPENING_PROMPT = "door. window."
-OPENING_THRESHOLD = 0.3
+OPENING_THRESHOLD = 0.4
 
 
 def detect_openings(image_rgb, detector="gdino+sam2", root=ROOT):

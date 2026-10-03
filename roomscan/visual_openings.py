@@ -10,6 +10,21 @@ from roomscan.room_outline import to_plan
 EXTENT_MARGIN = 0.3      # m: a hit this far beyond a wall's ends still counts as on that wall
 MERGE_DIST = 0.4         # m along the wall: same opening in two views
 EDGE_PX = 3.0            # px: box-edge uncertainty
+BORDER_FRAC = 0.01       # a box this close to the photo edge is cut off: not measurable
+# plausible sizes (m): width, height, sill ranges per type
+PLAUSIBLE = {"door": {"width": (0.6, 1.2), "height": (1.8, 2.4), "sill": (-0.2, 0.15)},
+             "window": {"width": (0.3, 2.5), "height": (0.3, 2.0), "sill": (0.3, 1.6)}}
+
+
+def _cut_off(box, size):
+    w, h = size
+    x0, y0, x1, y1 = box
+    return x0 <= BORDER_FRAC * w or y0 <= BORDER_FRAC * h or x1 >= (1 - BORDER_FRAC) * w or y1 >= (1 - BORDER_FRAC) * h
+
+
+def _plausible(m):
+    r = PLAUSIBLE[m["type"]]
+    return all(r[k][0] <= m[k] <= r[k][1] for k in ("width", "height", "sill"))
 
 
 def _ray(K, T, u, v):
@@ -77,7 +92,8 @@ def measure_openings(views, walls, tier="lidar"):
     walls = [w for w in walls if w["kind"] == "wall"]
     found = [m for v in views for det in v["detections"]
              if ("door" in det["label"].lower() or "window" in det["label"].lower())
-             for m in [_measure_one(det, v["K"], v["T_wc"], walls)] if m is not None]
+             and not ("size" in v and _cut_off(det["box"], v["size"]))
+             for m in [_measure_one(det, v["K"], v["T_wc"], walls)] if m is not None and _plausible(m)]
     groups = []
     for m in found:
         for g in groups:
