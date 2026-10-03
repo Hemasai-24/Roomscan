@@ -20,7 +20,7 @@ def main():
         import gdown
     except ImportError:
         sys.exit("pip install gdown==5.2.0   (or download the folder in a browser: " + url + ")")
-    dest = ROOT / "data" / "raw"
+    dest = ROOT / "data" / "raw" / "m53"          # the Drive folder holds the room folders and video/
     dest.mkdir(parents=True, exist_ok=True)
     gdown.download_folder(url, output=str(dest), quiet=False, remaining_ok=True)
     print(f"downloaded into {dest}")
