@@ -65,6 +65,9 @@ shapes from a few photos needs a different method, not more rules.
   so 0 of 9 were within 2 cm.
 - **Damage seen in only one photo is dropped.** This removed all 12 false alarms on our home, but it also
   dropped the staged water stain.
+- **Room arrangement.** Rooms are joined only through shared doorway photos, so the pipeline knows which rooms
+  open onto the hall but not which rooms sit next to each other. On our home the bathroom was placed beside
+  the bedroom; it is really beside the kitchen.
 - **Thin cracks** are hard for every detector we tried.
 - **Drift correction** is off by default. It removes added drift on synthetic data but shows no gain on the real
   scans and changes how rooms are split.

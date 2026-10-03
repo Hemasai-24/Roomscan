@@ -129,6 +129,8 @@ still fail. Details: `docs/fix_loop.md`.
 ## 8. Known failure modes
 
 - **Room shape from a few photos** is the main photo-tier error (per room −21 % to +42 %).
+- **Room arrangement** in the photo tier comes only from doorway photos. On our home the bathroom was placed
+  beside the bedroom instead of the kitchen.
 - **Video poses** break up on long walks, so only the longest consistent piece is used.
 - **Mirrors and glass** flip video poses and can look like openings.
 - **Shiny floors** fool the damage detector, so floors only report mould.

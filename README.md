@@ -30,7 +30,7 @@ Measured against tape on our own home (4 rooms, Samsung Galaxy M53).
 
 | Measure | Result | Target | Status |
 |---|---|---|---|
-| Photo tier, whole-home footprint | +6 %, all rooms placed and connected | ±8 % | Pass |
+| Photo tier, whole-home footprint | +6 %, all rooms connected to the hall (bathroom placed on the wrong side) | ±8 % | Pass |
 | Photo tier, per room | −21 % to +42 % | ±8 % | Fail |
 | Video tier | −31 % to +92 % | ±3 % | Fail |
 | Fix loop, photo footprint | +30 % before, +7.5 % after | | |

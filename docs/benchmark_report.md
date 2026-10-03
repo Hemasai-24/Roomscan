@@ -20,8 +20,10 @@ Saved result: `results/m53_benchmark.json`, key `photo_protocol`.
 
 *The plan the photo tier produced for our home. It is the pipeline's output, not the real layout. The real
 hall is a 3.79 × 4.11 m rectangle; here it is jagged and too long because furniture hid parts of its walls.
-The kitchen should touch the hall but is drawn slightly apart from it. The dashed lines show the connections
-the pipeline found (all three are correct). No ceiling was visible in the photos.*
+The kitchen should touch the hall but is drawn slightly apart from it. In the real home the bathroom is beside
+the kitchen; the plan puts it beside the bedroom. The pipeline only learns that each room opens onto the hall
+(the dashed lines, all three correct), not which rooms sit next to each other. No ceiling was visible in the
+photos.*
 
 | Room | Tape | Photo tier | Error | Tape inside 95 % range |
 |---|---|---|---|---|
@@ -34,7 +36,7 @@ the pipeline found (all three are correct). No ceiling was visible in the photos
 | Gate | Result | Pass |
 |---|---|---|
 | Whole-home footprint within ±8 % | +6 % | yes |
-| All rooms placed, correct connections, no overlap | 3 of 3 connections, largest overlap 0.06 m² | yes |
+| All rooms placed, correct connections, no overlap | 3 of 3 door connections, largest overlap 0.06 m²; but the bathroom is placed beside the bedroom instead of the kitchen | partly |
 | Wall lengths within ±8 % | 2 of 16 walls; mean error 74 cm | no |
 | Door and window widths within 2 cm on 85 % | 0 of 9, plus 6 false openings | no |
 | Ceiling height within 1.5 cm | ceiling not in the photos; values 3.3-4.3 m against 2.74 m | no |
