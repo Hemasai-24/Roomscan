@@ -35,7 +35,7 @@ repeatability, wall lengths). The fifth is the comparison with a consumer app, w
 
 | # | Requirement | Where | Evidence | Status |
 |---|---|---|---|---|
-| 2.10 | 3+ rooms and a connector | raw data on Drive (`data/DATA_URL`) | bedroom, kitchen, bathroom, hall | Met |
+| 2.10 | 3+ rooms and a connector | photos in `data/raw/m53/`, videos on Drive (`data/DATA_URL`) | bedroom, kitchen, bathroom, hall | Met |
 | 2.11 | Furnished room with two kinds of staged damage | same | bedroom: water stain and crack | Met |
 | 2.12 | Same rooms at all three tiers | same | photo and video | Gap: no LiDAR phone |
 | 2.13 | One room captured twice | same | bedroom video, two takes | Met |
@@ -76,7 +76,7 @@ repeatability, wall lengths). The fifth is the comparison with a consumer app, w
 | 5.3 | Script that regenerates every number | `scripts/reproduce_all.sh`, `results/` | CPU part checked end to end | Met |
 | 5.4 | Benchmark report | `docs/benchmark_report.md` | all tiers, repeatability, timing | Met |
 | 5.5 | Technical report, 6 pages or less | `docs/technical_report.md` | about 4 pages | Met |
-| 5.6 | Raw data and ground truth | `data/DATA_URL`, `data/ground_truth/` | photos, videos, tape notes | Met |
+| 5.6 | Raw data and ground truth | `data/raw/`, `data/DATA_URL`, `data/ground_truth/` | photos and door photos in git, videos on Drive, tape notes | Met |
 | 5.7 | Mirrors, glass, shiny floors, low light | `docs/TRADEOFFS.md` | each described with its measured effect | Gap: not solved |
 | 5.8 | Weights downloaded by script; no private servers | `scripts/fetch_weights.py` | all models run locally | Met |
 | 5.9 | Models and datasets disclosed | technical report section 9 | names and licences | Met |

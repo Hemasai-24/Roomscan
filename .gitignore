@@ -1,5 +1,9 @@
 sample_data
-data/raw/
+data/raw/*
+# our home photos are in git (photo tier reproduces from a clone); videos are too large and stay on Drive
+!data/raw/m53/
+data/raw/m53/video/
+!data/raw/m53_doors/
 weights/
 outputs/
 __pycache__/

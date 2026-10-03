@@ -1,7 +1,8 @@
 """Download our own raw benchmark data (Samsung Galaxy M53 photos/videos) into data/raw/.
 
 usage: python scripts/fetch_data.py
-The data is too large for git; it is a Google Drive folder whose link is in data/DATA_URL. Downloaded with
+The photos are in git (data/raw/m53, data/raw/m53_doors). The videos are too large for git (one is 140 MB); they
+are in a Google Drive folder whose link is in data/DATA_URL. Downloaded with
 gdown (pip install gdown==5.2.0). The tape measurements (data/ground_truth/) are in git. The provided Stray
 Scanner sample data is not redistributed: place it in sample_data/ as received.
 If gdown is blocked, open the link in a browser, download the folder and unzip it into data/raw/."""

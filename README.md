@@ -49,7 +49,7 @@ Full results: [benchmark report](docs/benchmark_report.md).
 ## Reproduce
 
 ```bash
-.venv/bin/python scripts/fetch_data.py               # our raw captures
+.venv/bin/python scripts/fetch_data.py               # our videos (photos are already in data/raw/)
 bash scripts/reproduce_all.sh                        # every reported number
 .venv/bin/python -m pytest -m "not model"            # tests
 ```
