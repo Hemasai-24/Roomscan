@@ -109,3 +109,27 @@ def test_photo_room_with_no_image_openings_drops_the_carved_phantoms():
             "openings": [{"id": "r_o0", "wall_id": "r_w0", "type": "window", "offset_along_wall": 0.1, "width": _M(0.6)}]}
     place_openings({"r": room}, [], "photo")
     assert room["openings"] == []
+
+
+def test_door_cut_at_top_and_bottom_still_gives_its_width():
+    v = _view("door", -0.4, 0.4, -1.4, 0.6)
+    x0, y0, x1, y1 = v["detections"][0]["box"]
+    v["detections"][0]["box"] = (x0, 0.0, x1, 299.0)                # top and bottom outside the frame
+    ops = measure_openings([v], [WALL], tier="lidar")
+    assert len(ops) == 1 and ops[0]["width"]["value"] == pytest.approx(0.8, abs=0.02)
+    assert "height" not in ops[0]                                   # unknown, not invented
+
+
+def test_edges_are_read_in_the_upright_image_for_turned_frames():
+    """A sideways video frame: the detector sees the upright image; edge points must map back so that the
+    door's left/right edges (its width) stay its width."""
+    from roomscan.damage_pipeline import upright_edges
+    orig_shape = (100, 200)                                  # sideways frame, H 100 x W 200
+    k = 1                                                    # one CCW turn makes it upright (200 x 100)
+    box_upright = (30.0, 50.0, 70.0, 150.0)                  # 40 px wide, 100 px tall in the upright image
+    e = upright_edges(box_upright, orig_shape, k)
+    # in the original sideways frame the door's width runs along the original y axis
+    (lx, ly), (rx, ry) = e["l"], e["r"]
+    (tx, ty), (bx, by) = e["t"], e["b"]
+    assert abs(abs(ry - ly) - 40) <= 2 and abs(rx - lx) <= 2
+    assert abs(abs(bx - tx) - 100) <= 2 and abs(by - ty) <= 2

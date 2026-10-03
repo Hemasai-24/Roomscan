@@ -203,6 +203,21 @@ def box_to_original(box, orig_shape, k):
     return float(min(xs)), float(min(ys)), float(max(xs)), float(max(ys))
 
 
+def upright_edges(box, orig_shape, k):
+    """Edge midpoints (left, right, top, bottom) of a box found in the upright image np.rot90(img, k),
+    as (x, y) pixels of the original image. Left/right/top/bottom are meant in the upright view."""
+    h, w = orig_shape[:2]
+    coords = np.rot90(np.stack(np.meshgrid(np.arange(w), np.arange(h)), -1), k)
+    rh, rw = coords.shape[:2]
+    x0, y0, x1, y1 = box
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+
+    def back(x, y):
+        c = coords[int(np.clip(round(y), 0, rh - 1)), int(np.clip(round(x), 0, rw - 1))]
+        return float(c[0]), float(c[1])
+    return {"l": back(x0, cy), "r": back(x1, cy), "t": back(cx, y0), "b": back(cx, y1), "c": back(cx, cy)}
+
+
 def openings_for_capture(cap, cap_dir, surfaces, tier, detect=None):
     """Doors/windows measured from the image (roomscan/visual_openings.py) on the same views as damage."""
     from roomscan.visual_openings import measure_openings
@@ -220,12 +235,14 @@ def openings_for_capture(cap, cap_dir, surfaces, tier, detect=None):
         f = frames[i]
         k = upright_turns(f.T_wc)
         img = imgs[i]
-        dets = detect(np.ascontiguousarray(np.rot90(img, k)))
-        sx, sy = cap.depth_size[0] / img.shape[1], cap.depth_size[1] / img.shape[0]   # boxes to depth-image pixels
+        upright = np.ascontiguousarray(np.rot90(img, k))
+        dets = detect(upright)
+        sx, sy = cap.depth_size[0] / img.shape[1], cap.depth_size[1] / img.shape[0]   # to depth-image pixels
         for d in dets:
-            x0, y0, x1, y1 = box_to_original(d["box"], img.shape, k)
-            d["box"] = (x0 * sx, y0 * sy, x1 * sx, y1 * sy)
-        views.append({"K": f.K, "T_wc": f.T_wc, "detections": dets, "size": cap.depth_size})
+            from roomscan.visual_openings import cut_sides
+            d["cut"] = cut_sides(d["box"], (upright.shape[1], upright.shape[0]))   # judged in the upright view
+            d["edges"] = {n: (x * sx, y * sy) for n, (x, y) in upright_edges(d["box"], img.shape, k).items()}
+        views.append({"K": f.K, "T_wc": f.T_wc, "detections": dets})
     return measure_openings(views, surfaces, tier)
 
 
@@ -251,8 +268,8 @@ def place_openings(rooms_by_id, found, tier):
             sign = 1.0 if b[k] >= a[k] else -1.0
             off = (o["centre_along"] - a[k]) * sign - o["width"]["value"] / 2
             placed.append({"wall_id": o["wall_id"], "type": o["type"], "offset_along_wall": round(max(off, 0.0), 4),
-                           "width": o["width"], "height": o["height"], "sill_height": o["sill_height"],
-                           "source": "image", "n_views": o["n_views"]})
+                           "width": o["width"], "source": "image", "n_views": o["n_views"],
+                           **{k: o[k] for k in ("height", "sill_height") if k in o}})
         if tier in ("photo", "video"):
             room["openings"] = placed
         else:
