@@ -119,22 +119,48 @@ wall-length gate and adjacency still fail. Predicted: footprint within ±15 % (m
 (missed). Held-out check on the sample is confounded (the LiDAR reference changed); no clean evidence that v2
 generalises.
 
-## 7. Known failure modes
+## 7. Doors, windows and damage
 
+**Doors and windows** come from two sources. Depth: a ray that ends beyond a wall passed through an opening
+(free-space carving), so an unseen wall is never called an opening. Image: a detector box ("door. window.") is
+turned into metres by casting rays through its left, right, top and bottom edges onto the fitted wall; the
+same opening in several views is merged. A box cut at the photo's left or right edge is rejected; if only its
+top or bottom is cut, the width is kept and the height is reported as unknown. Implausible sizes are rejected.
+Photo and video use the image openings; LiDAR keeps its carved openings and adds image openings only where none
+was carved (closed doors). On our home's photos this measured 0 of 9 openings within 2 cm, because the photos
+have no straight-on, full-frame door shots; the protocol now asks for them.
+
+**Damage:** Grounding DINO boxes, SAM 2.1 masks, each mask measured on its wall/floor/ceiling plane in metres.
+A region must be seen in two views on every tier, cover at least 0.003 m², and "peeling paint" needs a score of
+0.45. Detectors compared on 10 public damage photos and the undamaged sample flat:
+
+| Detector | Real damage found (10 photos) | False alarms (3 clean captures) |
+|---|---|---|
+| Grounding DINO, threshold 0.30 (default) | 5 | 4 |
+| OWLv2, threshold 0.20 | 4 | 5 |
+| YOLO11n-seg fine-tuned on crack-seg (cracks only) | 1 of 4 cracks | 16-105 of 153 frames |
+
+Rules R1-R5 turn damage into concealed-damage flags, each naming its rule; repair items are keyed to surfaces.
+
+## 8. Known failure modes
+
+- **Room shape from a few photos** is the main photo-tier error. Three targeted fixes each repaired the room
+  they aimed at and broke others (low furniture as floor, filling furniture notches, UniDepth metric depth);
+  see `docs/TRADEOFFS.md`.
 - **Mirrors and glass:** video poses flip 110-165° in front of the sample bathroom mirror; LiDAR confidence
-  drops at the glass shower; mirrors can create phantom openings. Mitigations: pose-flip rejection, keeping the
-  most consistent pose segment, confidence-2 depth only. Not solved.
+  drops at the glass shower; mirrors can create phantom openings. Pose-flip rejection and confidence-2 depth
+  reduce this; it is not solved.
 - **Wet-look / shiny floors:** reflections and tile grout fool the damage detector; floors keep only mould.
 - **Low light:** the 9 s bathroom clip with one small light gave 5.5 m² for a 2.87 m² room (+92 %).
-- **Closed doors** are invisible to free-space carving (flat like a wall).
-- **Jagged outlines:** furniture along walls makes floor edges ragged → many short wall segments; repeatability
-  across two scans of the flat fails (0/14 walls within 1 cm).
-- **Thin cracks** are often missed; a stain across an inside corner is reported per wall.
-- **Video:** only the most consistent piece of a long walk is used; **photo:** room areas −21 % … +42 % on our
-  own home; median wall error 28 % (before the fix loop) / 38.7 % (after) on simulated sample photos.
+- **Jagged outlines:** furniture along walls makes floor edges ragged, so outlines have many short walls, and
+  repeatability across two scans of the flat fails (0/14 walls within 1 cm).
+- **Cracks** are found in 1 of 4 public crack photos; damage seen in only one photo is not reported.
+- **Video:** only the most consistent piece of a long walk is used (pose tracking breaks into pieces).
 
-## 8. Models and data used (disclosure)
+## 9. Models and data used (disclosure)
 VGGT-1B (Meta; non-commercial research licence), Depth Anything V2 Metric-Indoor-Large (CC-BY-NC-4.0),
-Grounding DINO base (Apache-2.0), SAM 2.1 hiera-small (Apache-2.0); all pretrained, no training, weights
-fetched by `scripts/fetch_weights.py`, run locally. Data: the provided Stray Scanner sample captures (no ground
+Grounding DINO base (Apache-2.0), SAM 2.1 hiera-small (Apache-2.0), OWLv2 base (Apache-2.0, optional
+detector); all pretrained and run locally, weights fetched by `scripts/fetch_weights.py`. Experiments only:
+UniDepth V2 (CC BY-NC 4.0) and YOLO11n-seg (Ultralytics, AGPL-3.0) fine-tuned on the Ultralytics crack-seg
+dataset; public damage photos from Wikimedia Commons (licences in `data/public_damage/credits.txt`). Data: the provided Stray Scanner sample captures (no ground
 truth); our own Samsung Galaxy M53 photos/videos with tape measurements (no iPhone was available).
