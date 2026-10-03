@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CLASSES = {"water stain": "water_stain", "water damage": "water_stain", "peeling paint": "peeling_paint",
            "crack": "crack", "mold": "mold", "hole": "hole"}
 PROMPT = "water stain. crack. mold. peeling paint. hole."
-THRESHOLD = 0.35
+THRESHOLD = 0.30          # 0.35 -> 0.30: public-photo recall 3/10 -> 5/10, same false alarms on the sample (2-view rule)
 MIN_FRAC = 0.0005       # mask smaller than this share of the image: noise
 MAX_FRAC = 0.25         # larger: a whole wall / floor, not a defect
 NMS_IOU = 0.6
