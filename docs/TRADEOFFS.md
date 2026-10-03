@@ -12,7 +12,7 @@ Each line: the assumption · where it matters · what breaks when it is false.
 - **One floor level per capture, gravity known** (ARKit / phone "up" = +Y) · floor/ceiling classification ·
   a split-level home or a stair void can be mis-labelled (seen once: a 6.14 m "ceiling" over the stairs).
 - **A wall is vertical, flat and at least 1.4 m tall** · what blocks room splitting and bounds photo rooms ·
-  tall furniture (wardrobes, fridges) counts as wall; shallow jogs (< ~25 cm) are flattened.
+  tall furniture (wardrobes, fridges) counts as wall; furniture along walls makes outlines jagged.
 - **An opening is where depth passes through a wall** · doors/windows · closed doors are invisible; mirrors and
   glass can create phantom openings.
 - **A room's own wall never lies between two of its own photo positions** (fix loop v2) · photo room bounds ·
@@ -61,6 +61,11 @@ and tape-measured every wall, door, window and ceiling (`data/ground_truth/`). R
 widths/heights assigned assuming "width first"; sill heights and a second ceiling spot not measured; staged
 damage is small (stain 9 × 6 cm, crack 8 cm). The fix-loop rule (v2) was refined while looking at this same
 capture (see `docs/fix_loop.md`).
+
+**Tried and rejected: simpler outlines** (merge wall steps < 20-30 cm, `OUTLINE_EPS` / `MIN_JOG` in
+`roomscan/room_outline.py`). Fewer walls (home 52 → 24-36; LiDAR 208 → 116-140) but not more accurate: mean
+room-area error on our home 25 % → 27-29 %, main-wall error 25 % → 19-23 %, LiDAR repeatability no better.
+Kept the original setting; the plan drawing hides wall labels under 0.5 m instead.
 
 **Tried and rejected (measured on our home):** sharing doorway views between rooms automatically (branch
 `auto-doorway-share`). Only hall↔kitchen had enough feature matches (28) to be detected; bedroom and bathroom

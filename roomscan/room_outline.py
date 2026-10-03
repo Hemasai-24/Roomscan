@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 
 SNAP_DIST = 0.15
+OUTLINE_EPS = 0.08      # m: outline simplification tolerance
+MIN_JOG = 0.05          # m: parallel wall pieces closer than this are merged (removes zero-length walls)
 MASK_SNAP_DIST = 0.25   # room-mask edges stop short of the wall face (walls dilated out of the floor)
 
 
@@ -92,7 +94,8 @@ def _snap(segs, lines, snap_dist=SNAP_DIST):
     return out
 
 
-def _drop_degenerate(segs, min_len=0.05):
+def _drop_degenerate(segs, min_len=None):
+    min_len = MIN_JOG if min_len is None else min_len
     """Remove zero-length walls: if segments i-1 and i+1 are collinear, segment i (and i+1) vanish."""
     segs = list(segs)
     changed = True
@@ -137,7 +140,7 @@ def outline_from_mask(mask, grid, walls, angle):
     cnts, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cnt = max(cnts, key=cv2.contourArea)
     segs = [(ax, o * grid.cell + grid.lo[0 if ax == "u" else 1] + grid.cell / 2)
-            for ax, o in _rectilinear(cnt, eps=0.08 / grid.cell)]
+            for ax, o in _rectilinear(cnt, eps=OUTLINE_EPS / grid.cell)]
     segs = _drop_degenerate(segs)
     if len(segs) < 4:
         ys, xs = np.nonzero(mask)
