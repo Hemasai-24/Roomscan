@@ -16,6 +16,13 @@ To regenerate the numbers, run `bash scripts/reproduce_all.sh`. Saved results ar
 Photos taken as the capture protocol asks (each doorway photo in both rooms' folders), with the current code.
 Saved result: `results/m53_benchmark.json`, key `photo_protocol`.
 
+![Photo-tier plan of our home](images/home_photo_plan.png)
+
+*The plan the photo tier produced for our home. It is the pipeline's output, not the real layout. The real
+hall is a 3.79 × 4.11 m rectangle; here it is jagged and too long because furniture hid parts of its walls.
+The kitchen should touch the hall but is drawn slightly apart from it. The dashed lines show the connections
+the pipeline found (all three are correct). No ceiling was visible in the photos.*
+
 | Room | Tape | Photo tier | Error | Tape inside 95 % range |
 |---|---|---|---|---|
 | bedroom | 8.37 m² | 6.62 m² | −21 % | yes |

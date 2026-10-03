@@ -107,7 +107,7 @@ def render(plan, out_stem):
                Line2D([], [], color=WINDOW_COLOR, lw=6, label="window"),
                Line2D([], [], color="#999", ls="--", label="rooms connected"),
                Line2D([], [], color=DAMAGE_COLOR, marker="X", ls="", ms=9, label="damage")]
-    ax.legend(handles=handles, loc="upper right", fontsize=8, framealpha=0.9)
+    ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(1.01, 1), fontsize=8, framealpha=0.9)  # outside the plan
     total = sum(r["floor_area"]["value"] for r in plan["rooms"])
     ax.set_title(f"{plan['capture']['id']}  ·  {plan['capture']['tier']} tier  ·  {len(plan['rooms'])} rooms  ·  "
                  f"{total:.1f} m²   (ranges are 95 %)", fontsize=11)
