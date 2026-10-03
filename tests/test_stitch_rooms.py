@@ -167,3 +167,32 @@ def test_room_placed_by_shared_photo_is_slid_up_to_the_hall():
     gap = Polygon(rooms[0]["polygon"]).distance(Polygon(rooms[1]["polygon"]))
     assert abs(gap - 0.15) < 0.03
     assert _overlaps(rooms) < 1e-6
+
+
+def test_shared_photo_turn_is_rounded_to_a_right_angle():
+    # the shared photo's direction in B is 3 deg off: B must still come out square to the hall
+    hall = make_room("H", [(0, 0), (4, 0), (4, 3), (0, 3)])
+    b = make_room("B", [(0, 0), (2, 0), (2, 2), (0, 2)])
+    a = np.radians(3)
+    infos = [info(hall, [(1, 1), (4.0, 2.5)], [(1, 0), (1, 0)]),
+             info(b, [(1.0, 0.0), (1, 1)], [(-np.sin(a), np.cos(a)), (0, 1)])]
+    links = {(0, 1): {"matches": 800, "photo_i": 1, "photo_j": 0, "same_photo": True}}
+    rooms, _, _ = stitch(infos, links)
+    for p, q in zip(rooms[1]["polygon"], rooms[1]["polygon"][1:]):
+        assert min(abs(p[0] - q[0]), abs(p[1] - q[1])) < 1e-6        # every edge is axis-aligned
+
+
+def test_small_gap_between_neighbouring_rooms_is_closed():
+    # two rooms on the same side of the hall, 0.5 m apart: the second slides until they share a wall
+    hall = make_room("H", [(0, 0), (6, 0), (6, 3), (0, 3)])
+    k = make_room("K", [(0, 0), (2, 0), (2, 2), (0, 2)])
+    b = make_room("B", [(0, 0), (2, 0), (2, 2), (0, 2)])
+    up = (0, 1)
+    infos = [info(hall, [(1, 3.0), (3.5, 3.0), (1, 1)], [up, up, up]),
+             info(k, [(1, 0.0)], [up]), info(b, [(1, 0.0)], [up])]
+    links = {(0, 1): {"matches": 800, "photo_i": 0, "photo_j": 0, "same_photo": True},
+             (0, 2): {"matches": 700, "photo_i": 1, "photo_j": 0, "same_photo": True}}
+    rooms, _, _ = stitch(infos, links)
+    gap = Polygon(rooms[1]["polygon"]).distance(Polygon(rooms[2]["polygon"]))
+    assert abs(gap - 0.15) < 0.03
+    assert _overlaps(rooms) < 1e-6

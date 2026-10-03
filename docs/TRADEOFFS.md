@@ -66,7 +66,8 @@ shapes from a few photos needs a different method, not more rules.
 - **Damage seen in only one photo is dropped.** This removed all 12 false alarms on our home, but it also
   dropped the staged water stain.
 - **Room joining needs the doorway photo in both folders.** Without it only 1 of 3 rooms is joined. The shared
-  photo fixes each room's position to within about a metre; the room is then slid against the hall wall.
+  photo fixes each room's position to within about a metre. The room is then slid against the hall wall, and
+  against a neighbouring room if the gap is under 1 m; larger gaps stay (our bedroom is 1.1 m from the bathroom).
 - **Thin cracks** are hard for every detector we tried.
 - **Drift correction** is off by default. It removes added drift on synthetic data but shows no gain on the real
   scans and changes how rooms are split.

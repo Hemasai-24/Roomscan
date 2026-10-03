@@ -23,8 +23,9 @@ photo of each door (taken later the same evening, in each room's `doors/` folder
 *The plan the photo tier produced for our home. It is the pipeline's output, not the real layout. The real
 hall is a 3.79 × 4.11 m rectangle; here it is jagged and too long because furniture hid parts of its walls.
 The kitchen, bathroom and bedroom are in the right order along the hall, each joined where its doorway photo
-was taken (dashed lines), with its door (orange) on the wall facing the hall. The bedroom and bathroom are
-turned 2-3° from square. No ceiling was visible in the photos.*
+was taken (dashed lines), with its door (orange) on the wall facing the hall. The kitchen and bathroom share a
+wall, as they do in reality. The bedroom is drawn 1.1 m from the bathroom: gaps over 1 m are left as the
+photos place them. No ceiling was visible in the photos.*
 
 | Room | Tape | Photo tier | Error | Tape inside 95 % range |
 |---|---|---|---|---|
@@ -116,6 +117,6 @@ Laptop with an RTX 2000 Ada (8 GB) and 20 CPU threads.
 | Run | Time |
 |---|---|
 | LiDAR, one room / whole floor | 20 s / 56-82 s, plus about 80 s for damage |
-| Photo, 4 rooms, 24 photos, with damage | 113 s |
+| Photo, 4 rooms, 24 photos and 4 door photos, with damage | 142 s |
 | Video, 68 s walkthrough | 35 s back end plus 102 s damage; VGGT takes 5.4 s per 20 frames |
 | Full reproduction, CPU part | about 17 min |

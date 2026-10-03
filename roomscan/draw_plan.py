@@ -60,11 +60,24 @@ def setup_axes(ax):
     ax.invert_yaxis()
 
 
+def _drop_overlapping_labels(fig, keep, walls):
+    """Remove wall labels that would cover a room label or a longer wall's label (longest walls win)."""
+    fig.canvas.draw()                                   # label boxes have a size only once drawn
+    r = fig.canvas.get_renderer()
+    boxes = [(t.get_bbox_patch() or t).get_window_extent(r).expanded(1.05, 1.1) for t in keep]
+    for _, t in sorted(walls, key=lambda x: -x[0]):
+        bb = t.get_window_extent(r).expanded(1.05, 1.1)
+        if any(bb.overlaps(o) for o in boxes):
+            t.remove()
+        else:
+            boxes.append(bb)
+
+
 def render(plan, out_stem):
     from matplotlib.lines import Line2D
     from shapely.geometry import Polygon
     fig, ax = plt.subplots(figsize=(12, 12))
-    centres = {}
+    centres, wall_texts, room_texts = {}, [], []
     for room in plan["rooms"]:
         poly = np.array(room["polygon"] + [room["polygon"][0]])
         ax.fill(poly[:, 0], poly[:, 1], color="#f3efe6", zorder=0)
@@ -79,8 +92,9 @@ def render(plan, out_stem):
             nrm = np.array([d[1], -d[0]]) / (np.linalg.norm(d) + 1e-9)     # outward for a CCW outline
             ang = np.degrees(np.arctan2(d[1], d[0]))
             ang = ang - 180 if ang > 90 else ang + 180 if ang < -90 else ang   # keep text upright
-            ax.text(*((a + b) / 2 + nrm * 0.25), text, ha="center", va="center", fontsize=7, color="#444",
-                    rotation=-ang, rotation_mode="anchor")
+            t = ax.text(*((a + b) / 2 + nrm * 0.25), text, ha="center", va="center", fontsize=7, color="#444",
+                        rotation=-ang, rotation_mode="anchor")
+            wall_texts.append((float(np.linalg.norm(d)), t))
         for o in room["openings"]:
             w = walls[o["wall_id"]]
             a, b = np.array(w["start"]), np.array(w["end"])
@@ -91,8 +105,8 @@ def render(plan, out_stem):
                     lw=6, zorder=2, solid_capstyle="butt")
         rp = Polygon(room["polygon"]).representative_point()          # always inside the room
         centres[room["id"]] = np.array([rp.x, rp.y])
-        ax.text(rp.x, rp.y, room_label(room), ha="center", va="center", fontsize=9, zorder=6,
-                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#bbb", alpha=0.85))
+        room_texts.append(ax.text(rp.x, rp.y, room_label(room), ha="center", va="center", fontsize=9, zorder=6,
+                                  bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#bbb", alpha=0.85)))
     for link in plan.get("adjacency", []):
         a, b = centres.get(link["room_a"]), centres.get(link["room_b"])
         if a is not None and b is not None:
@@ -108,6 +122,7 @@ def render(plan, out_stem):
                Line2D([], [], color="#999", ls="--", label="rooms connected"),
                Line2D([], [], color=DAMAGE_COLOR, marker="X", ls="", ms=9, label="damage")]
     ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(1.01, 1), fontsize=8, framealpha=0.9)  # outside the plan
+    _drop_overlapping_labels(fig, room_texts, wall_texts)
     total = sum(r["floor_area"]["value"] for r in plan["rooms"])
     ax.set_title(f"{plan['capture']['id']}  ·  {plan['capture']['tier']} tier  ·  {len(plan['rooms'])} rooms  ·  "
                  f"{total:.1f} m²   (ranges are 95 %)", fontsize=11)

@@ -32,6 +32,7 @@ Measured against tape on our own home (4 rooms, Samsung Galaxy M53).
 |---|---|---|---|
 | Photo tier, whole-home footprint | +6 %, all rooms placed and connected in the right order | ±8 % | Pass |
 | Photo tier, per room | −21 % to +42 % | ±8 % | Fail |
+| Photo tier, door widths (one straight-on photo per door) | 3 to 10 cm too wide | 2 cm | Fail |
 | Video tier | −31 % to +92 % | ±3 % | Fail |
 | Fix loop, photo footprint | +30 % before, +7.5 % after | | |
 

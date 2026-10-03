@@ -35,8 +35,9 @@ planes ── floor / ceiling / walls ── rooms ── outlines, openings, ce
   GPU), and sets the metric scale with Depth Anything V2 Metric-Indoor.
 - Photos: the same models, run on one room folder at a time, with the focal length taken from EXIF. Rooms are
   joined with the doorway photo that appears in both rooms' folders: that photo was taken from one spot, so
-  the room is turned and moved until the photo's camera is at the same place in both rooms, and then slid
-  up against the hall wall.
+  the room is turned and moved until the photo's camera is at the same place in both rooms. Rooms are turned
+  only by whole right angles, because every outline is drawn straight along its own walls. The room is then
+  slid up against the hall wall, and against a neighbouring room if the gap is under 1 m.
 
 **Back end**
 1. Fit planes with RANSAC and label them floor, ceiling or wall.
@@ -133,7 +134,7 @@ Video and photo add a scale error (Depth Anything on this kind of scene: −2 % 
 
 **Calibration.** A 95 % range is calibrated if the true value falls inside it about 95 % of the time. On our
 tape-measured home, the truth is inside the photo-tier range for 4 of 4 room areas and 15 of 16 walls. The
-ranges are therefore honest, but they are too wide to be useful (the lower bound of every room area is 0).
+ranges contain the truth, but they are too wide to be useful (the lower bound of every room area is 0).
 Narrower ranges need better accuracy first. There is no tape check for LiDAR because we had no LiDAR phone.
 
 ## 7. Fix loop

@@ -14,6 +14,7 @@ MAX_OVERLAP = 0.1          # m2
 AIM_MAX_DEG = 60.0         # a photo "looks at" a door if the door is within this angle of its view direction
 PUSH_STEP = 0.05
 VIRTUAL_DOOR_WIDTH = 0.8
+MAX_NEIGHBOUR_GAP = 1.0    # m: rooms placed by a shared photo this close to another room are slid against it
 
 
 def _unit(v):
@@ -106,6 +107,7 @@ def same_photo_pose(info_i, ki, info_j, kj):
     photo is in both rooms' folders: it was taken from one spot, so its camera must coincide in both rooms."""
     fi, fj = _unit(info_i["forward_plan"][ki]), _unit(info_j["forward_plan"][kj])
     ang = np.arctan2(fi[1], fi[0]) - np.arctan2(fj[1], fj[0])
+    ang = round(ang / (np.pi / 2)) * (np.pi / 2)    # room outlines are square to their walls: turn by right angles
     R = np.array([[np.cos(ang), -np.sin(ang)], [np.sin(ang), np.cos(ang)]])
     return R, np.asarray(info_i["cameras_plan"][ki], float) - R @ np.asarray(info_j["cameras_plan"][kj], float)
 
@@ -186,6 +188,7 @@ def stitch(infos, links):
             strength[j] += l["matches"]
     root = int(np.argmax(strength + 1e-6 * np.array([r["floor_area"]["value"] for r in rooms])))
     placed, used, adjacency, warnings = [root], set(), [], []
+    parent_of, by_photo = {}, []
     while True:
         best = None
         for (i, j), l in links.items():
@@ -204,10 +207,12 @@ def stitch(infos, links):
         if ov > MAX_OVERLAP:
             room, pushed = resolve_overlap(room, [rooms[p] for p in placed], _unit(da["normal_out"]))
             warnings.append(f"{room['id']}: pushed {pushed:.2f} m away from {rooms[a]['id']} to avoid overlap")
-        elif l.get("same_photo"):
+        if l.get("same_photo"):
             room, slid = slide_to(room, rooms[a], [rooms[p] for p in placed])
             if slid > 0:
                 warnings.append(f"{room['id']}: moved {slid:.2f} m towards {rooms[a]['id']} to close the gap")
+            by_photo.append(b)
+        parent_of[b] = a
         rooms[b] = room
         placed.append(b)
         # a detected door joins exactly two rooms; a virtual door is only "the wall this photo looks at",
@@ -217,6 +222,16 @@ def stitch(infos, links):
             * (0.5 if pushed > 0 else 1.0)
         adjacency.append({"room_a": rooms[a]["id"], "room_b": room["id"], "via": da["id"], "via_b": db["id"],
                           "evidence_matches": int(l["matches"]), "confidence": round(float(conf), 2)})
+    # a shared photo fixes a room's position to about a metre: close small gaps to neighbouring rooms too
+    for b in by_photo:
+        others = [p for p in placed if p not in (b, parent_of[b])]
+        if not others:
+            continue
+        near = min(others, key=lambda p: _poly(rooms[b]).distance(_poly(rooms[p])))
+        if _poly(rooms[b]).distance(_poly(rooms[near])) <= MAX_NEIGHBOUR_GAP:
+            rooms[b], slid = slide_to(rooms[b], rooms[near], [rooms[p] for p in placed if p != b])
+            if slid > 0:
+                warnings.append(f"{rooms[b]['id']}: moved {slid:.2f} m towards {rooms[near]['id']} to close the gap")
     rest = [k for k in range(n) if k not in placed]
     if rest:
         x = max(_poly(rooms[p]).bounds[2] for p in placed) + 1.0
