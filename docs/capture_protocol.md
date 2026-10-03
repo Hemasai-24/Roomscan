@@ -37,15 +37,14 @@ is the most accurate.
 1. Open the Camera app and choose **Photo**. Use the normal "1x" lens. Turn off **Live** (the round icon at
    the top). Do not use Portrait or Panorama.
 2. Hold the phone upright for every photo.
-3. In each room, take these photos:
-    - **Corners:** stand in each corner and photograph the opposite corner, tilted a little down so the floor
-      shows. That is 4 photos.
-    - **Doors and windows:** one photo of each, taken straight on, with the whole door or window in the picture
-      from bottom to top.
-    - **Damage** (stains, cracks, mould): two photos of each, from two different spots.
-4. **Between two rooms:** stand in the doorway and take one photo looking back into the room you are leaving.
+3. **Corners:** in each room, stand in each corner and photograph the opposite corner, tilted a little down so
+   the floor shows. That is 4 photos per room.
+4. **Doors and windows:** one photo of each, taken straight on, with the whole door or window in the picture
+   from bottom to top.
+5. **Damage** (stains, cracks, mould): two photos of each, from two different spots.
+6. **Between two rooms:** stand in the doorway and take one photo looking back into the room you are leaving.
    You will put this photo in the folders of **both** rooms. This is how the rooms are joined into one plan.
-5. Keep each room's photos together, for example in one album per room. Aim for 2 to 8 photos per room.
+7. Keep each room's photos together, for example in one album per room. Aim for 2 to 8 photos per room.
 
 ## Things to avoid
 
@@ -60,7 +59,7 @@ is the most accurate.
   **Files** app, go to *On My iPhone > Stray Scanner*, and copy the recording's folder.
 - **Video:** in the Photos app, share the video unedited (AirDrop or Save to Files).
 - **Photos:** send the original photos with one folder per room, named after the room, for example
-  `kitchen`, `hall`, `bedroom`. Put the doorway photo from step 4 in both rooms' folders.
+  `kitchen`, `hall`, `bedroom`. Put the doorway photo from step 6 in both rooms' folders.
 
 Send the files by AirDrop, USB cable or a cloud drive to the person who runs Roomscan.
 
