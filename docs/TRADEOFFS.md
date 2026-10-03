@@ -69,6 +69,7 @@ whole buildings from satellite images. Scripts: `scripts/experiments/`. Public p
 `scripts/eval_public_damage.py`; credits and licences in `data/public_damage/credits.txt`.
 
 ## Constraints we worked under
+
 | Constraint | Consequence |
 |---|---|
 | No iPhone available (author's phone is a Samsung Galaxy M53, no LiDAR) | Could not record our own LiDAR captures, a Polycam LiDAR export, or iPhone photo/video |
@@ -76,6 +77,7 @@ whole buildings from satellite images. Scripts: `scripts/experiments/`. Public p
 | ~42 hours from brief to submission | Scope triaged by score weight; see "Not done" |
 
 ## What we did instead
+
 | Brief requirement | What we did | Effect on the numbers |
 |---|---|---|
 | Capture route | Route 2: Stray Scanner (free; same format as the sample data) + one-page protocol | None; the protocol was not tested by us on an iPhone |
@@ -93,6 +95,7 @@ damage is small (stain 9 × 6 cm, crack 8 cm). The fix-loop rule (v2) was refine
 capture (see `docs/fix_loop.md`).
 
 **Tried and rejected: room-shape changes, measured on our home (photo tier) and the LiDAR sample:**
+
 | Change (branch) | Bedroom | Hall | Kitchen | Bathroom | Home total | LiDAR sample area |
 |---|---|---|---|---|---|---|
 | none (shipped) | −21 % | +10 % | +42 % | +27 % | +6 % | 41.0 m² |
@@ -117,6 +120,7 @@ morning experiment's 3/3 connections needed the *identical* doorway photo placed
 so the capture protocol asks for that, and automatic detection remains future work.
 
 ## Not done (and why)
+
 | Requirement | Status | Why |
 |---|---|---|
 | Staged damage room captured at all tiers | **Partial:** captured at photo and video tiers (bedroom; stain 9 × 6 cm, crack 8 cm) | No LiDAR tier (no LiDAR phone); the staged damage is small |
@@ -135,7 +139,8 @@ so the capture protocol asks for that, and automatic detection remains future wo
 - **Manhattan (right-angle) room footprints.** Wall outlines are snapped to two perpendicular
   directions. Rooms with angled walls will be squared off.
 
-## Plan 2 results (LiDAR tier, sample data, 2026-10-03 early morning: current numbers: `docs/benchmark_report.md` §2)
+## LiDAR tier, first results on the sample (2026-10-03 morning; current numbers are in `docs/benchmark_report.md` §2)
+
 | Check | Result | Gate |
 |---|---|---|
 | Rooms found (single_room / floor-only / with-ceiling) | 2 / 10 / 8 | - |
@@ -144,7 +149,7 @@ so the capture protocol asks for that, and automatic detection remains future wo
 | Drift correction size | up to 2.9-4.2 deg / 12-23 cm on the whole-floor scans, 9-14 chunks rejected by the trust limit | - |
 | Repeatability (floor-only vs with-ceiling, drift off) | 14 walls paired, 0 within 1 cm / 0.5% | fail |
 
-What this means, honestly:
+What this means:
 - **Drift correction is implemented and switchable** (`--drift-correction on|off`, default off) and the
   ablation script exists (`scripts/drift_ablation.py`). On synthetic data with injected drift it makes
   doubled walls ~2.6x sharper. On the real scans the effect is within noise: our sharpness measure
@@ -157,6 +162,7 @@ What this means, honestly:
 
 ## Video tier (2026-10-03)
 **Models used (pretrained, no training; weights fetched by `scripts/fetch_weights.py`):**
+
 | Model | Version / source | License | Used for |
 |---|---|---|---|
 | VGGT-1B | `facebook/VGGT-1B` on Hugging Face, code `github.com/facebookresearch/vggt` (main, 2025) | weights: non-commercial research license (a separate `VGGT-1B-Commercial` checkpoint exists, gated) | camera poses + relative depth from video frames |
@@ -168,12 +174,13 @@ optimistic). Video ranges (`TIER_REL["video"] = 0.25`) were widened from the sin
 are provisional until re-fitted on tape-measured videos.
 
 **Measured (video tier vs LiDAR tier on the same sample capture; LiDAR is the reference, not ground truth):**
+
 | Capture | Video rooms / area | LiDAR rooms / area | Footprint IoU | Walls >= 1 m within 3% | LiDAR length inside video 95% range |
 |---|---|---|---|---|---|
 | single_room (ranges fitted here) | 1 / 4.9 m2 | 2 / 12.3 m2 | 0.22 | 0 of 2 | 5 of 6 |
 | floor_only (held out) | 1 / 5.2 m2 | 10 / 36.9 m2 | 0.08 | 0 of 3 | 4 of 14 |
 
-What this means, honestly:
+What this means:
 - **The video tier runs end to end but does not yet meet its gate (walls within 3%).** It produces a plan
   for only one piece of the walk.
 - **Cause:** VGGT fits 20 frames at a time on our 8 GB GPU; chunks are glued by shared frames, and the glue
@@ -206,7 +213,7 @@ themselves fragments of the real rooms (Plan 2 limitations), which inflates some
 
 Per-room area error vs LiDAR ranges from -69 % to +320 %; 6 of 16 rooms are within +-25 %.
 
-What this means, honestly:
+What this means:
 - **The photo tier stitches a whole-property plan from per-room folders, with no overlaps, but its
   dimensions do not meet the +-8 % gate.** Median wall error 28 % (before the fix loop; 38.7 % after, see `docs/fix_loop.md`).
 - **Ranges are honest but very wide:** relative sigma 0.6 (from the 90th-percentile wall error, 117 %).
@@ -223,6 +230,7 @@ What this means, honestly:
 ## Damage
 
 **Models (pretrained, no training, fetched by `scripts/fetch_weights.py`):**
+
 | Model | Source | Revision | Licence | Use |
 |---|---|---|---|---|
 | Grounding DINO base | `IDEA-Research/grounding-dino-base` (Hugging Face) | `12bdfa3` | Apache-2.0 | boxes from the text "water stain. crack. mold. peeling paint. hole." |
@@ -234,8 +242,8 @@ and pose and measured on the wall/floor/ceiling plane it lies on (area, width, h
 **No damage in the sample flat, so we measured false alarms there and recall on painted damage:**
 - Detector alone, 20 frames: false alarms 33 / 17 / 7 / 2 / 0 at score 0.25 / 0.30 / 0.35 / 0.40 / 0.45 (tile
   grout as "crack", plants and posters as "peeling paint", ceiling lights and vents as "hole"). A stain and a
-  jagged line painted onto a frame score 0.44 / 0.46, so a high threshold would also miss real damage. We keep
-  0.35 and filter instead: a region must be seen in **2+ views** (LiDAR/video), **no "hole" on ceilings**,
+  jagged line painted onto a frame score 0.44 / 0.46, so a high threshold would also miss real damage. We filter
+  instead of raising the threshold (the default is now 0.30, see the section above): a region must be seen in **2+ views** (every tier), **no "hole" on ceilings**,
   **floors keep only mould** (shiny tiles: reflections and grout, the brief's "wet-look surfaces"), and wall
   damage lying entirely in the **bottom 12 cm** (skirting-board joint) is dropped.
 - Full pipeline on the three undamaged captures (2 views/s, max 150, 1280 px): **0 / 2 / 3 false regions**
@@ -250,7 +258,6 @@ and pose and measured on the wall/floor/ceiling plane it lies on (area, width, h
   only one view and was dropped. We chose recall (2 views/s); the reviewer sees `n_views` and `score` on every
   region.
 
-**Known limits:** thin cracks are weak; a stain on an inside corner is reported per wall; photo-tier damage is
-kept from a single view (`single_view: true`) because a room has only 2-8 photos; photo rooms have no
-`floor_level` (rule R5 cannot fire there); damage on a floor is only reported as mould. Real staged damage on
-our own Galaxy M53 benchmark room (`data/ground_truth/own_rooms.csv`, `scripts/eval_damage.py`) is the true test.
+**Known limits:** thin cracks are weak; a stain on an inside corner is reported per wall; photo-tier damage needs
+the same 2 views as the other tiers, so damage in a single photo is dropped (the staged stain was); photo rooms have no
+`floor_level` (rule R5 cannot fire there); damage on a floor is only reported as mould. Results on the staged damage in our own bedroom are in `docs/benchmark_report.md`.
