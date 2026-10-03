@@ -54,6 +54,50 @@ def photos_to_capture(images, fx_exif, out_dir, runner, metric, bias):
                      "metric_scale": round(float(scale), 5), "metric_scale_spread": round(float(spread), 4)}
 
 
+MIN_CLIPPED_AREA = 0.8   # m2: a clip leaving less than this is not trusted
+WALL_CLEAR = 0.3          # a bounding wall must be at least this far from the cameras' centre
+WALL_SPAN_MARGIN = 1.0    # ... and must extend to within this distance of the centre, along the wall
+
+
+def clip_mask_to_walls(mask, grid, classes, angle, cams_plan):
+    """Cut a photo room's floor at its own walls (fix loop): from the cameras' centre look along +u, -u, +v,
+    -v and keep floor only up to the nearest tall wall plane in that direction. Floor seen through a doorway
+    lies beyond such a wall and belongs to the neighbouring room. Returns (mask, {direction: offset})."""
+    from roomscan.room_outline import _wall_lines
+    from roomscan.split_rooms import is_tall_wall
+    fh = classes["floor"].height
+    walls = [w for w in classes["walls"] if is_tall_wall(w, fh)]
+    centre = np.median(cams_plan, axis=0)
+    bounds = {}
+    for axis, k in (("u", 0), ("v", 1)):
+        for sign in (1, -1):
+            best = None
+            for ax, off, a, b, support, _ in _wall_lines(walls, angle):
+                if ax != axis:
+                    continue
+                d = (off - centre[k]) * sign
+                along = centre[1 - k]
+                if d >= WALL_CLEAR and a - WALL_SPAN_MARGIN <= along <= b + WALL_SPAN_MARGIN:
+                    if best is None or d < best[0]:
+                        best = (d, off)
+            if best is not None:
+                bounds[f"{'+' if sign > 0 else '-'}{axis}"] = best[1]
+    ys, xs = np.mgrid[0:mask.shape[0], 0:mask.shape[1]]
+    cu = grid.lo[0] + (xs + 0.5) * grid.cell
+    cv = grid.lo[1] + (ys + 0.5) * grid.cell
+    keep = np.ones_like(mask, bool)
+    tol = grid.cell
+    if "+u" in bounds:
+        keep &= cu <= bounds["+u"] + tol
+    if "-u" in bounds:
+        keep &= cu >= bounds["-u"] - tol
+    if "+v" in bounds:
+        keep &= cv <= bounds["+v"] + tol
+    if "-v" in bounds:
+        keep &= cv >= bounds["-v"] - tol
+    return mask & keep, bounds
+
+
 def _floor_prior(planes, pts, cams, warnings):
     """Classes with a floor assumed CAMERA_HEIGHT_PRIOR below the cameras (floor not in view). Any horizontal
     plane found stays a ceiling candidate (a ceiling must not become the floor)."""
@@ -136,6 +180,15 @@ def measure_photo_room(cap_dir, room_id, tier="photo"):
         if not hit:
             raise CaptureError("cameras are not inside any recovered floor region")
         mask = np.logical_or.reduce(hit)
+        clipped, bounds = clip_mask_to_walls(mask, grid, classes, angle, cq)
+        if clipped.sum() * grid.cell ** 2 >= MIN_CLIPPED_AREA:
+            if clipped.sum() < mask.sum():
+                warnings.append(f"floor beyond the room's own walls removed "
+                                f"({(mask.sum() - clipped.sum()) * grid.cell ** 2:.1f} m2 seen through doorways)")
+            mask = clipped
+        else:
+            warnings.append("could not bound the room by its own walls: floor seen through doorways may be included")
+        out["wall_bounds"] = {k: round(float(v), 3) for k, v in bounds.items()}
         s = surfaces_for_room(classes, mask, grid, angle)
         if s["ceiling"] is not None and s["ceiling"].height - s["floor"].height > MAX_PHOTO_CEILING:
             warnings.append(f"ceiling reading {s['ceiling'].height - s['floor'].height:.2f} m is implausible "
