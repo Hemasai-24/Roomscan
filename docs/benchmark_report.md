@@ -71,11 +71,13 @@ found.
 | bathroom, low light, 9 s | 5.50 m² (+92 %) | 2.87 m² |
 
 The video gate (walls within ±3 %) fails. Repeatability also fails: the bedroom's walls differ by 61, 99 and
-113 cm between the two takes. The ceiling was not filmed; the true 2.74 m is inside every reported range, but
-the ranges are wide. Ceiling height is therefore both biased and unrepeatable: video reads 1.85-2.10 m (0.6-0.9 m
-low), photos read 3.3-4.3 m (0.5-1.6 m high), and the two bedroom video takes differ by up to 25 cm. The cause
-is the same in every case: no capture saw the ceiling, so the value is only the highest wall point seen. The cause is camera tracking: on the sample, giving the video tier the true camera poses
-brings the footprint to +3.6 %.
+113 cm between the two takes. The cause is camera tracking: on the sample, giving the video tier the true camera
+poses brings the footprint to +3.6 %.
+
+Ceiling height is both biased and unrepeatable. No capture saw the ceiling, so the reported value is only the
+highest wall point seen: video reads 1.85-2.10 m (0.6-0.9 m low), photos read 3.3-4.3 m (0.5-1.6 m high), and
+the two bedroom video takes differ by up to 25 cm. The true 2.74 m is inside every reported range, but the
+ranges are wide.
 
 ## 3. Damage on our home
 
