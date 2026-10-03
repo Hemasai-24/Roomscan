@@ -73,7 +73,9 @@ def main():
     areas = true_areas(gt)
     res = {"truth_areas_m2": {k: round(v, 2) for k, v in areas.items()}}
     protocol = "outputs/m53/photo_protocol/plan.json"     # same photos, doorway shots in both folders
-    for name, path in (("photo_before_fix", before), ("photo_after_fix", after), ("photo_protocol", protocol)):
+    doors = "outputs/m53/photo_doors/plan.json"           # protocol set plus a straight-on photo of each door
+    for name, path in (("photo_before_fix", before), ("photo_after_fix", after), ("photo_protocol", protocol),
+                       ("photo_with_doors", doors)):
         if Path(path).exists():
             res[name] = photo_rows(json.loads(Path(path).read_text()), gt, areas)
     res["video"] = video_rows(areas)

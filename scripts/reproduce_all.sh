@@ -75,6 +75,8 @@ if [ -d "$M53" ]; then
   done
   step m53_doorway_shared bash scripts/make_doorway_shared.sh
   step m53_photo_protocol $PY run.py data/raw/m53_doorway_shared --tier photo --out outputs/m53/photo_protocol
+  step m53_with_doors bash scripts/make_with_doors.sh
+  step m53_photo_doors $PY run.py data/raw/m53_with_doors --tier photo --out outputs/m53/photo_doors
   step m53_score $PY scripts/score_m53.py outputs/fix_loop/after_photo_v2/plan.json
 else
   echo "== m53: $M53 not found (python scripts/fetch_data.py) - skipped"

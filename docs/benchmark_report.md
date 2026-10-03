@@ -13,16 +13,18 @@ To regenerate the numbers, run `bash scripts/reproduce_all.sh`. Saved results ar
 
 ## 1. Photo tier on our home
 
-Photos taken as the capture protocol asks (each doorway photo in both rooms' folders), with the current code.
-Saved result: `results/m53_benchmark.json`, key `photo_protocol`.
+Photos taken as the capture protocol asks: each doorway photo in both rooms' folders, and one straight-on
+photo of each door (taken later the same evening, in each room's `doors/` folder). Saved result:
+`results/m53_benchmark.json`, key `photo_with_doors`. Without the door photos the room numbers are the same
+(key `photo_protocol`).
 
 ![Photo-tier plan of our home](images/home_photo_plan.png)
 
 *The plan the photo tier produced for our home. It is the pipeline's output, not the real layout. The real
 hall is a 3.79 × 4.11 m rectangle; here it is jagged and too long because furniture hid parts of its walls.
 The kitchen, bathroom and bedroom are in the right order along the hall, each joined where its doorway photo
-was taken (dashed lines). The bedroom and bathroom are turned 2-3° from square. No ceiling was visible in the
-photos.*
+was taken (dashed lines), with its door (orange) on the wall facing the hall. The bedroom and bathroom are
+turned 2-3° from square. No ceiling was visible in the photos.*
 
 | Room | Tape | Photo tier | Error | Tape inside 95 % range |
 |---|---|---|---|---|
@@ -37,9 +39,22 @@ photos.*
 | Whole-home footprint within ±8 % | +6 % | yes |
 | All rooms placed, correct connections, no overlap | 3 of 3 door connections, rooms in the right order, no overlap | yes |
 | Wall lengths within ±8 % | 2 of 16 walls; mean error 74 cm | no |
-| Door and window widths within 2 cm on 85 % | 0 of 9, plus 6 false openings | no |
+| Door and window widths within 2 cm on 85 % | doors 3-10 cm too wide (table below); windows still wrong; 0 of 9 within 2 cm | no |
 | Ceiling height within 1.5 cm | ceiling not in the photos; values 3.3-4.3 m against 2.74 m | no |
 | Truth inside the 95 % range | 4 of 4 areas, 15 of 16 walls, but the ranges are very wide | yes |
+
+| Door | Tape | Measured from its photo | Error | Tape inside 95 % range |
+|---|---|---|---|---|
+| bedroom | 80 cm | 88 cm | +8 cm | yes |
+| hall (front door) | 91 cm | 100 cm | +9 cm | yes |
+| kitchen | 80 cm | 90 cm | +10 cm | yes |
+| bathroom | 80 cm | 83 cm | +3 cm | yes |
+
+Each door is measured from its own photo: the detector finds the door frame, depth from the same photo gives
+the wall plane, and the width is the part of the frame you can see through. All four are too wide by 4-13 %,
+the same direction as this phone's depth-scale error (0 to +16 %). Without these photos only one door was
+found, at 63 cm instead of 91 cm. The windows are still wrong: none of the 6 detected windows is within 10 cm
+of a real one.
 
 The footprint passes partly because errors cancel: the bedroom is too small and the other rooms too big. The
 summed per-room error is about 19 %. Without the doorway photo in both folders, only 1 of 3 connections is

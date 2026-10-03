@@ -276,6 +276,101 @@
   "damage": 0,
   "runtime_s": 110.4
  },
+ "photo_with_doors": {
+  "rooms": {
+   "bedroom": {
+    "area": 6.62,
+    "truth": 8.37,
+    "err_pct": -20.9,
+    "in_range": true,
+    "range": [
+     0.0,
+     17.7983
+    ]
+   },
+   "hall": {
+    "area": 17.08,
+    "truth": 15.56,
+    "err_pct": 9.8,
+    "in_range": true,
+    "range": [
+     0.0,
+     45.8855
+    ]
+   },
+   "kitchen": {
+    "area": 4.07,
+    "truth": 2.86,
+    "err_pct": 42.4,
+    "in_range": true,
+    "range": [
+     0.0,
+     10.9276
+    ]
+   },
+   "bathroom": {
+    "area": 3.65,
+    "truth": 2.87,
+    "err_pct": 27.0,
+    "in_range": true,
+    "range": [
+     0.0,
+     9.8105
+    ]
+   }
+  },
+  "total": 31.41,
+  "total_truth": 29.65,
+  "total_err_pct": 5.9,
+  "score": {
+   "tier": "photo",
+   "walls": {
+    "n": 16,
+    "max_abs_err_m": 2.5120000000000005,
+    "mean_abs_err_m": 0.7447812500000002,
+    "within_gate": 2,
+    "coverage": 0.9375,
+    "count_mismatch_rooms": [
+     "bedroom",
+     "hall"
+    ]
+   },
+   "ceiling": {
+    "n": 4,
+    "abs_err_m": 1.5877999999999997,
+    "coverage": 1.0
+   },
+   "openings": {
+    "n_truth": 9,
+    "within_2cm": 0,
+    "missed": 6,
+    "phantom": 7,
+    "rate": 0.0
+   },
+   "gates": {
+    "wall_lengths": false,
+    "opening_widths": false,
+    "ceiling_height": false
+   }
+  },
+  "adjacency": [
+   [
+    "Room2_hall",
+    "Room4_bathroom"
+   ],
+   [
+    "Room2_hall",
+    "Room3_kitchen"
+   ],
+   [
+    "Room2_hall",
+    "Room1_bedroom"
+   ]
+  ],
+  "unplaced": 0,
+  "damage": 0,
+  "runtime_s": 135.9
+ },
  "video": {
   "walkthrough": {
    "rooms": [

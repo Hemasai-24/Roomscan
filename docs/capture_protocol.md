@@ -59,7 +59,8 @@ is the most accurate.
   **Files** app, go to *On My iPhone > Stray Scanner*, and copy the recording's folder.
 - **Video:** in the Photos app, share the video unedited (AirDrop or Save to Files).
 - **Photos:** send the original photos with one folder per room, named after the room, for example
-  `kitchen`, `hall`, `bedroom`. Put the doorway photo from step 6 in both rooms' folders.
+  `kitchen`, `hall`, `bedroom`. Put the doorway photo from step 6 in both rooms' folders, and each
+  straight-on door photo from step 4 in a folder called `doors` inside its room's folder.
 
 Send the files by AirDrop, USB cable or a cloud drive to the person who runs Roomscan.
 

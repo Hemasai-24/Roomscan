@@ -61,8 +61,8 @@ shapes from a few photos needs a different method, not more rules.
 - **Low light.** The 9 s bathroom clip with one small light gave +92 % area.
 - **Video tracking.** VGGT runs on 20 frames at a time on an 8 GB GPU. The chunks drift apart, so only the
   longest consistent piece of a walk is used. A larger GPU or a global pose graph would help.
-- **Doors and windows** are measured only when a photo shows the whole opening straight on. Our photos did not,
-  so 0 of 9 were within 2 cm.
+- **Doors** need a straight-on photo of each door. With one, the width comes out 3-10 cm too wide (the phone's
+  depth scale); without one, no door is measured. **Windows** have no such step yet and are wrong on our home.
 - **Damage seen in only one photo is dropped.** This removed all 12 false alarms on our home, but it also
   dropped the staged water stain.
 - **Room joining needs the doorway photo in both folders.** Without it only 1 of 3 rooms is joined. The shared

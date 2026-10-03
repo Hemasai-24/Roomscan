@@ -13,8 +13,8 @@ ranges are, so any fix to the back end helps all three.
 
 ![Photo tier on our home](images/home_photo_plan.png)
 
-*Figure 1. Photo tier on our home (24 photos, Galaxy M53). Room order and connections are right; room shapes
-and the doors and windows are not (see section 8 and the benchmark report).*
+*Figure 1. Photo tier on our home (24 photos, Galaxy M53). Room order, connections and door positions are right;
+room shapes and windows are not, and doors are 3-10 cm too wide (see section 8 and the benchmark report).*
 
 ![LiDAR tier on the sample flat](images/lidar_floor_plan.png)
 
@@ -87,6 +87,12 @@ at the left or right edge of the photo is rejected. If only the top or bottom is
 the height is marked unknown. Photo and video use the image openings. LiDAR keeps its depth openings and adds
 image openings only where depth found none, which covers closed doors.
 
+**Door photos.** A straight-on photo of a door, placed in the room's `doors/` folder, is measured on its own
+and never used for the room's shape (it is usually taken from outside the room). The detector finds the door
+frame; depth from that photo gives the wall around the frame as a plane; the opening is the part of the frame
+where the depth jumps well behind that plane, because you can see through it. Its ends, projected onto the
+plane, give the width. The door is drawn on the room's wall that faces the hall.
+
 **Damage** is found with Grounding DINO (boxes from text such as "water stain" and "crack") and SAM 2.1 (exact
 outlines). Each outline is placed on its wall, floor or ceiling and measured in square metres. To cut false
 alarms, a region must appear in at least two views, cover at least 0.003 m², and "peeling paint" needs a score
@@ -147,10 +153,9 @@ still fail. Details: `docs/fix_loop.md`.
 - **Low light**: a 9 s bathroom clip with one small light gave +92 % area.
 - **Furniture along walls** makes outlines jagged, which also breaks repeatability.
 - **Cracks** are found in 1 of 4 public crack photos. Damage seen in only one photo is dropped.
-- **Doors and windows on our home are wrong.** The photo tier found 7 openings, each from a single photo. One
-  matches a real opening but is more than 2 cm off; the other 6 match nothing, and most real doors are
-  missing. A door or window is only measured well when a photo shows all of it straight on, and our photos
-  did not.
+- **Doors and windows on our home.** With a straight-on photo of each door, all 4 doors are found and are
+  3-10 cm too wide (the phone's depth scale). Windows have no such step and are wrong: none of the 6 detected
+  windows is within 10 cm of a real one.
 
 ## 9. Models and data
 

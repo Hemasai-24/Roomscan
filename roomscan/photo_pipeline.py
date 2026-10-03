@@ -135,6 +135,9 @@ def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None):
                 warnings.append(f"{m['room']['id']}: no fitted surfaces (fallback room) - damage not checked")
     links = room_links(images)
     rooms, adjacency, stitch_warnings = stitch(infos, links)
+    if damage and detect is None:                  # straight-on door photos in <room>/doors/ (real models only)
+        from roomscan.door_photos import doors_from_photos
+        doors_from_photos(folders, rooms, adjacency, stitch_warnings)
     meta = {"n_rooms": len(rooms), "rooms": per_room,
             "links": [{"room_a": infos[i]["room"]["id"], "room_b": infos[j]["room"]["id"], **v}
                       for (i, j), v in sorted(links.items())],
