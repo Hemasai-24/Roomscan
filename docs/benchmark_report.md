@@ -34,6 +34,12 @@ Not possible (no LiDAR iPhone): own LiDAR captures, LiDAR-tier tape accuracy, Po
 | Ceiling height ≤ 1.5 cm | ceilings not seen in the photos; reported as wide flagged ranges (truth 2.74 m inside, values 3.3-3.8 m) | fail |
 | Calibration (truth inside the 95 % range) | 4/4 room areas, 16/16 walls — **but the ranges are very wide** (area lower bound 0) | honest, not useful |
 
+**Same photos, captured as the protocol now asks** (each doorway photo copied into both rooms' folders;
+`data/raw/m53_doorway_shared`, made from the same 24 photos by copying 3 doorway shots into the hall folder):
+**all 3 true connections found (hall ↔ bedroom, kitchen, bathroom), 0 rooms unplaced, 0 overlap, total
+footprint +6 %** (bedroom −21 %, hall +10 %, kitchen +42 %, bathroom +27 %). Output: `outputs/m53/photo_protocol/`.
+The stitch row's adjacency part passes with this protocol; per-room wall lengths still fail.
+
 Before the fix loop the whole-property footprint was **+30 %** (kitchen +145 %, bathroom +123 %): see
 `docs/fix_loop.md`.
 
