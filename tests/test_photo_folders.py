@@ -66,7 +66,7 @@ def test_images_resized_and_focal_read(tmp_path):
     imgs, fx, names, dropped = load_room_images(_set(tmp_path) / "kitchen", size=(392, 518))
     assert dropped == []
     assert imgs.shape == (2, 518, 392, 3) and imgs.dtype == np.uint8
-    np.testing.assert_allclose(fx, focal_px_from_35mm(26, 392, 518))
+    np.testing.assert_allclose(fx, focal_px_from_35mm(26, 300, 400) * 392 / 300)   # 300x400 -> crop 300x396 -> 392x518
     assert names == ["a.jpg", "b.jpg"]
 
 
