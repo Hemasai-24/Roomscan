@@ -38,11 +38,11 @@ is the most accurate.
    the top). Do not use Portrait or Panorama.
 2. Hold the phone upright for every photo.
 3. In each room, take these photos:
-   - **Corners:** stand in each corner and photograph the opposite corner, tilted a little down so the floor
-     shows. That is 4 photos.
-   - **Doors and windows:** one photo of each, taken straight on, with the whole door or window in the picture
-     from bottom to top.
-   - **Damage** (stains, cracks, mould): two photos of each, from two different spots.
+    - **Corners:** stand in each corner and photograph the opposite corner, tilted a little down so the floor
+      shows. That is 4 photos.
+    - **Doors and windows:** one photo of each, taken straight on, with the whole door or window in the picture
+      from bottom to top.
+    - **Damage** (stains, cracks, mould): two photos of each, from two different spots.
 4. **Between two rooms:** stand in the doorway and take one photo looking back into the room you are leaving.
    You will put this photo in the folders of **both** rooms. This is how the rooms are joined into one plan.
 5. Keep each room's photos together, for example in one album per room. Aim for 2 to 8 photos per room.
