@@ -21,11 +21,18 @@ def _fill_holes(m):
     return m | (pad[1:-1, 1:-1] == 1)
 
 
+LOW_FURNITURE = (0.05, 1.2)   # m above the floor: horizontal surfaces in this band count as floor ...
+LOW_FURNITURE_REACH = 1.0     # ... if within this distance of floor actually seen
+
+
 def split_rooms(classes, angle, cell=0.05, core=0.45, min_area=1.0, small_area=0.6, merge_len=1.2, extra_free=None, extra_radius=0.5):
     """extra_free: optional (N,2) plan points known to be walkable (video tier: the camera path), each
     widened to a disc of extra_radius; walls still cut it. LiDAR leaves it None."""
     fh = classes["floor"].height
     floor_q = to_plan(classes["floor"].inliers, angle)
+    # low furniture (bed, table, counter, sofa) stands on the floor: its footprint is room area too
+    low = [p for p in classes.get("horizontal", []) if LOW_FURNITURE[0] < p.height - fh < LOW_FURNITURE[1]]
+    low_q = to_plan(np.concatenate([p.inliers for p in low]), angle) if low else np.zeros((0, 2))
     walls = [w for w in classes["walls"] if is_tall_wall(w, fh)]
     wall_pts = np.concatenate([w.inliers[(w.inliers[:, 1] - fh > 0.1) & (w.inliers[:, 1] - fh < 2.0)]
                                for w in walls]) if walls else np.zeros((0, 3))
@@ -35,7 +42,12 @@ def split_rooms(classes, angle, cell=0.05, core=0.45, min_area=1.0, small_area=0
     lo = allq.min(0) - 0.3
     W, H = ((allq.max(0) - lo) / cell).astype(int) + 8
     g = Grid(lo, cell, (H, W))
-    free = cv2.morphologyEx(g.raster(floor_q), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    seen = g.raster(floor_q)
+    if len(low_q):           # furniture counts only where it stands next to floor we actually saw
+        r = int(round(LOW_FURNITURE_REACH / cell))
+        near = cv2.dilate(seen, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1)))
+        seen = seen | (g.raster(low_q) & near)
+    free = cv2.morphologyEx(seen, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
     if len(extra):
         r = int(round(extra_radius / cell))
         free |= cv2.dilate(g.raster(extra), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1)))

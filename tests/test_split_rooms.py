@@ -73,3 +73,13 @@ def test_narrow_corridor_between_rooms_is_its_own_room():
     areas = sorted(m.sum() * g.cell ** 2 for m in rooms)
     assert len(rooms) == 3
     np.testing.assert_allclose(areas, [2.7, 9.0, 9.0], rtol=0.2)
+
+
+def test_floor_under_a_mattress_still_belongs_to_the_room():
+    # 4 x 3 m room; a 2 x 1.6 m mattress (top 0.3 m) hides the floor in one corner
+    p = room_points([(0, 0), (4, 0), (4, 3), (0, 3)], 2.5)
+    under = (p[:, 1] < 0.02) & (p[:, 0] < 2.0) & (p[:, 2] < 1.6)
+    p = np.concatenate([p[~under], table_points(0.0, 0.0, 2.0, 1.6, top=0.3)])
+    rooms, g = _split(p)
+    assert len(rooms) == 1
+    assert rooms[0].sum() * g.cell ** 2 > 11.0           # whole room, not 12 - 3.2
