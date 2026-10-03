@@ -62,6 +62,19 @@ widths/heights assigned assuming "width first"; sill heights and a second ceilin
 damage is small (stain 9 × 6 cm, crack 8 cm). The fix-loop rule (v2) was refined while looking at this same
 capture (see `docs/fix_loop.md`).
 
+**Tried and rejected — room shape, measured on our home (photo tier) and the LiDAR sample:**
+| Change (branch) | Bedroom | Hall | Kitchen | Bathroom | Home total | LiDAR sample area |
+|---|---|---|---|---|---|---|
+| none (shipped) | −21 % | +10 % | +42 % | +27 % | +6 % | 41.0 m² |
+| low furniture counts as floor (`low-furniture`) | **−6 %** | +25 % | +42 % | +27 % | +18 % | 47.4 m² |
+| fill shallow furniture notches (`fill-furniture-notches`) | **−9 %** | +10 % | +74 % | +29 % | +13 % | 48.3 m² |
+| UniDepth V2 metric depth with EXIF focal (`exp-metric-depth`) | +16 % | +61 % | +32 % | **−5 %** | +39 % | — |
+
+Each fixes the room it targets and breaks others. UniDepth's **scale** is far better (0.998× LiDAR depth,
+per-frame std 0.11, vs Depth Anything 1.425×, std 0.30 on the sample — `docs/experiments/metric_depth.md` on its
+branch), but our room-shape rules use thresholds in metres that were tuned at the old scale. Conclusion: the
+bottleneck is building a room's shape from a few photos; it needs a scale-robust redesign, not more rules.
+
 **Tried and rejected: simpler outlines** (merge wall steps < 20-30 cm, `OUTLINE_EPS` / `MIN_JOG` in
 `roomscan/room_outline.py`). Fewer walls (home 52 → 24-36; LiDAR 208 → 116-140) but not more accurate: mean
 room-area error on our home 25 % → 27-29 %, main-wall error 25 % → 19-23 %, LiDAR repeatability no better.
