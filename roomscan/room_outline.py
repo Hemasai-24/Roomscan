@@ -134,8 +134,35 @@ def _assemble(snapped):
     return verts, edges
 
 
+FILL_FURNITURE_NOTCHES = True
+FURNITURE_NOTCH_DEPTH = 0.8   # m: a notch in the outline at most this deep ...
+FURNITURE_NOTCH_AREA = 1.5    # m2: ... and this small is furniture against a wall (wardrobe, cabinet)
+
+
+def fill_furniture_notches(mask, cell, max_depth=FURNITURE_NOTCH_DEPTH, max_area=FURNITURE_NOTCH_AREA):
+    """Extend the room's outer walls through furniture: a shallow, small notch cut into the floor region from
+    its bounding box is floor hidden behind a wardrobe or cabinet, so it is filled. A deep or large notch
+    (an L-shaped room) is kept. The mask is in the Manhattan-aligned plan grid."""
+    ys, xs = np.nonzero(mask)
+    if len(ys) == 0:
+        return mask
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    box = np.zeros_like(mask)
+    box[y0:y1, x0:x1] = True
+    notch = (box & ~mask).astype(np.uint8)
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(notch, connectivity=4)
+    out = mask.copy()
+    for k in range(1, n):
+        x, y, w, h, area = stats[k]
+        if min(w, h) * cell <= max_depth and area * cell * cell <= max_area:
+            out |= lab == k
+    return out
+
+
 def outline_from_mask(mask, grid, walls, angle):
     """Rectilinear outline of one room's floor mask, edges snapped to nearby fitted walls."""
+    if FILL_FURNITURE_NOTCHES:
+        mask = fill_furniture_notches(mask, grid.cell)
     img = mask.astype(np.uint8) * 255
     cnts, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cnt = max(cnts, key=cv2.contourArea)

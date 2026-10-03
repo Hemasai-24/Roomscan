@@ -68,3 +68,28 @@ def test_shallow_furniture_bump_does_not_add_walls():
     mask[int(0.5 / cell):int(0.65 / cell), int(1.5 / cell):int(2.7 / cell)] = False     # bump 15 cm deep
     verts, edges = outline_from_mask(mask, g, c["walls"], 0.0)
     assert len(edges) == 4
+
+
+def _rect_mask(g, cell, x0, z0, x1, z1):
+    m = np.zeros(g.shape, bool)
+    m[int((z0 + 0.5) / cell):int((z1 + 0.5) / cell), int((x0 + 0.5) / cell):int((x1 + 0.5) / cell)] = True
+    return m
+
+
+def test_wardrobe_in_a_corner_is_filled_to_the_walls():
+    from roomscan.room_outline import Grid, fill_furniture_notches
+    cell = 0.05
+    g = Grid(np.array([-0.5, -0.5]), cell, (90, 110))
+    mask = _rect_mask(g, cell, 0, 0, 4, 3)
+    mask &= ~_rect_mask(g, cell, 3.4, 0, 4, 1.2)          # wardrobe 0.6 m deep x 1.2 m wide in a corner
+    filled = fill_furniture_notches(mask, cell)
+    assert abs(filled.sum() * cell ** 2 - 12.0) < 0.15
+
+
+def test_real_l_shaped_room_keeps_its_notch():
+    from roomscan.room_outline import Grid, fill_furniture_notches
+    cell = 0.05
+    g = Grid(np.array([-0.5, -0.5]), cell, (110, 130))
+    mask = _rect_mask(g, cell, 0, 0, 5, 4) & ~_rect_mask(g, cell, 3, 2, 5, 4)    # notch 2 x 2 m
+    filled = fill_furniture_notches(mask, cell)
+    assert abs(filled.sum() * cell ** 2 - 16.0) < 0.15
