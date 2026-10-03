@@ -14,7 +14,7 @@ from roomscan.save_plan import build_plan
 from roomscan.stitch_rooms import stitch
 from roomscan.video_scale import CALIBRATION, KEY
 
-MIN_PHOTOS, MAX_PHOTOS = 2, 8          # VGGT fits 8 photos at 392x518 in 8 GB
+MIN_PHOTOS, MAX_PHOTOS = 2, 11         # up to 8 own photos + doorway copies; VGGT fits 20 frames in 8 GB
 ROOT = Path(__file__).resolve().parents[1]
 
 
