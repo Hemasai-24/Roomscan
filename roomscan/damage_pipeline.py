@@ -17,7 +17,9 @@ VIEWS_PER_SEC = 2.0
 MAX_VIEWS = 150
 DETECT_WIDTH = 1280          # px; thin cracks need the detail (Stray video is 1920 wide)
 NEAR_OPENING = 0.20          # m between damage edge and an opening side
-MIN_VIEWS = {"lidar": 2, "video": 2, "photo": 1}
+MIN_VIEWS = {"lidar": 2, "video": 2, "photo": 2}   # real damage looks the same from two positions
+MIN_AREA = 0.003             # m2: smaller regions are pixel noise
+CLASS_MIN_SCORE = {"peeling_paint": 0.45}   # the class behind most false alarms (tiles, posters, furniture)
 ALL = {"water_stain", "crack", "mold", "peeling_paint", "hole"}
 # From the false-alarm review on the (undamaged) sample flat: ceiling lights/vents read as "hole"; shiny floor
 # tiles (reflections, grout) read as stains, cracks and holes, so floors keep only mould; the skirting-board
@@ -129,6 +131,8 @@ def filter_damage(damage, tier):
     for d in damage:
         kind = _kind(d["surface_id"])
         if d["class"] not in ALLOWED[kind] or d["n_views"] < MIN_VIEWS[tier]:
+            continue
+        if d["area"]["value"] < MIN_AREA or d["score"] < CLASS_MIN_SCORE.get(d["class"], 0.0):
             continue
         if kind == "wall" and d["bottom_above_floor"]["value"] + d["height"]["value"] < SKIRTING_BAND:
             continue

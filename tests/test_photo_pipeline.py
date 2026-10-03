@@ -84,7 +84,9 @@ def test_cli_detects_photo_set(tmp_path):
     assert r.returncode != 0 and "photo" in (r.stderr + r.stdout)
 
 
-def test_photo_damage_measured_per_room_before_stitching(tmp_path):
+def test_photo_damage_measured_per_room_before_stitching(tmp_path, monkeypatch):
+    from roomscan import damage_pipeline
+    monkeypatch.setitem(damage_pipeline.MIN_VIEWS, "photo", 1)    # this test checks wiring, not the 2-view rule
     from tests.test_damage_pipeline import _box_room
     from tests.test_damage_wiring import _box_capture, fake_detect
     c, verts, edges, angle = _box_room()

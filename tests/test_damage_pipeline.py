@@ -55,11 +55,9 @@ def _dmg(cls, sid, n_views=2, center=(1.0, 0.0, 4.0), width=0.3):
             "n_views": n_views, "score": 0.5, "near_opening": False}
 
 
-def test_filter_needs_two_views_for_lidar_and_video_but_not_photo():
+def test_filter_needs_two_views_for_every_tier():
     d = [_dmg("water_stain", "room_0_w0", n_views=1)]
-    assert filter_damage(d, "lidar") == [] and filter_damage(d, "video") == []
-    kept = filter_damage(d, "photo")
-    assert len(kept) == 1 and kept[0]["single_view"] is True
+    assert filter_damage(d, "lidar") == [] and filter_damage(d, "video") == [] and filter_damage(d, "photo") == []
 
 
 def test_filter_class_per_surface():
