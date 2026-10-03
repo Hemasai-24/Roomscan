@@ -72,7 +72,9 @@ def _room_damage(m, detect):
     return annotate(found, {rid: m["room"]}, {rid: g["angle"]})
 
 
-def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None):
+def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None, register=False):
+    """register=True (experimental, off by default): place linked rooms from matched 3D points
+    (roomscan/photo_register.py) instead of door-to-door guessing."""
     t0 = time.time()
     path, out_dir = Path(path), Path(out_dir)
     folders = room_folders(path)
@@ -116,7 +118,11 @@ def run_photos(path, out_dir, reconstruct=None, damage=False, detect=None):
             else:
                 warnings.append(f"{m['room']['id']}: no fitted surfaces (fallback room) - damage not checked")
     links = room_links(images)
-    rooms, adjacency, stitch_warnings = stitch(infos, links)
+    reg_fn = None
+    if register:
+        from roomscan.photo_register import register_rooms
+        reg_fn = lambda i, j: register_rooms(infos[i], images[i], infos[j], images[j])   # noqa: E731
+    rooms, adjacency, stitch_warnings = stitch(infos, links, register=reg_fn)
     meta = {"n_rooms": len(rooms), "rooms": per_room,
             "links": [{"room_a": infos[i]["room"]["id"], "room_b": infos[j]["room"]["id"], **v}
                       for (i, j), v in sorted(links.items())],

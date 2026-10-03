@@ -6,6 +6,8 @@ modes:  baseline   - the shipped photo tier (VGGT poses+depth, Depth Anything sc
         pose_scale - LiDAR camera poses, VGGT depth x TRUE scale
         all        - LiDAR poses + LiDAR depth of the same photos (only the room-shape method is left)
         walls      - baseline reconstruction, room extent from fitted wall planes (candidate fix, see --extent)
+        register   - baseline reconstruction, rooms placed by 3D point registration (candidate fix)
+        <mode>_register - any mode above + registration stitching (e.g. all_register = stitching ceiling)
 
 usage: python scripts/exp_photo_oracle.py <make_photo_folders out_dir> <stray_capture_dir> <mode> [<mode> ...]
 writes <out_dir>/oracle_<mode>/plan.json and prints one summary row per mode."""
@@ -104,7 +106,9 @@ def main():
     for mode in modes:
         d = out / f"oracle_{mode}"
         log = {}
-        plan = run_photos(out / "rooms", d, reconstruct=make_reconstruct(mode, models, cap, out / "rooms", log))
+        base = mode.replace("_register", "") if mode != "register" else "baseline"
+        plan = run_photos(out / "rooms", d, reconstruct=make_reconstruct(base, models, cap, out / "rooms", log),
+                          register=mode.endswith("register"))
         validate(plan)
         d.mkdir(parents=True, exist_ok=True)
         (d / "plan.json").write_text(json.dumps(plan, indent=2))

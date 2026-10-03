@@ -138,11 +138,46 @@ def resolve_overlap(room, placed, normal):
         k += 1
 
 
-def stitch(infos, links):
+def _registered_candidate(rooms, infos, placed_idx, tf, a, b, reg):
+    """Candidate placing room b from a registration (R, t, n) of b's own frame into a's own frame,
+    composed with the transform room a already received."""
+    Rab, tab, n = reg
+    Ra, ta = tf[a]
+    R, t = Ra @ Rab, Ra @ tab + ta
+    cand = transform_room(infos[b]["room"], R, t)
+    ov = _overlap(cand, [rooms[p] for p in placed_idx])
+    cb = _poly(cand).centroid
+    doors = door_frames(rooms[a])
+    da = min(doors, key=lambda d: np.hypot(d["mid"][0] - cb.x, d["mid"][1] - cb.y)) if doors else \
+        {"id": f"{rooms[a]['id']}_reg", "mid": np.array([cb.x, cb.y]), "virtual": True,
+         "normal_out": np.array([cb.x, cb.y]) - np.array(_poly(rooms[a]).centroid.coords[0])}
+    db = {"id": f"{infos[b]['room']['id']}_reg", "virtual": False}
+    score = 10.0 + np.log1p(n) - 2 * ov           # measured placement beats any door-to-door guess
+    return (score, R, t, da, db, ov)
+
+
+def stitch(infos, links, register=None):
     """infos: per room {"room", "cameras_plan", "forward_plan"} in the room's own plan coordinates;
-    links: {(i, j): {"matches", "photo_i", "photo_j"}} with i < j. Returns (rooms, adjacency, warnings)."""
+    links: {(i, j): {"matches", "photo_i", "photo_j"}} with i < j. Returns (rooms, adjacency, warnings).
+    register: optional callable (i, j) -> (R, t, n_inliers) placing room j's own frame into room i's own
+    frame from matched 3D points (roomscan/photo_register.py), or None; when given it replaces door guessing."""
     n = len(infos)
     rooms = [info["room"] for info in infos]
+    tf = {k: (np.eye(2), np.zeros(2)) for k in range(n)}
+    reg_cache = {}
+
+    def reg(a, b):
+        if register is None:
+            return None
+        if (a, b) not in reg_cache:
+            r = register(a, b)
+            if r is None:                    # only the other direction measured: invert it
+                q = register(b, a)
+                if q is not None:
+                    Rq, tq, nq = q
+                    r = (Rq.T, -Rq.T @ tq, nq)
+            reg_cache[(a, b)] = r
+        return reg_cache[(a, b)]
     strength = np.zeros(n)
     for (i, j), l in links.items():
         if l["matches"] >= MIN_MATCHES:
@@ -157,7 +192,10 @@ def stitch(infos, links):
                 continue
             for a, b in ((i, j), (j, i)):
                 if a in placed and b not in placed:
-                    for c in _candidates(infos, rooms, placed, a, b, l, used):
+                    r = reg(a, b)
+                    cands = [_registered_candidate(rooms, infos, placed, tf, a, b, r)] if r is not None else \
+                        _candidates(infos, rooms, placed, a, b, l, used)
+                    for c in cands:
                         if best is None or c[0] > best[0][0]:
                             best = (c, a, b, l)
         if best is None:
@@ -166,17 +204,23 @@ def stitch(infos, links):
         room = transform_room(infos[b]["room"], R, t)
         pushed = 0.0
         if ov > MAX_OVERLAP:
+            before = np.array(room["polygon"][0], float)
             room, pushed = resolve_overlap(room, [rooms[p] for p in placed], _unit(da["normal_out"]))
+            t = t + (np.array(room["polygon"][0], float) - before)
             warnings.append(f"{room['id']}: pushed {pushed:.2f} m away from {rooms[a]['id']} to avoid overlap")
         rooms[b] = room
+        tf[b] = (R, t)
         placed.append(b)
         # a detected door joins exactly two rooms; a virtual door is only "the wall this photo looks at",
         # which may lead to several rooms (overlaps are still prevented by pushing)
         used.update(d["id"] for d in (da, db) if not d["virtual"])
         conf = min(1.0, l["matches"] / 100) * (0.5 if (da["virtual"] or db["virtual"]) else 1.0) \
             * (0.5 if pushed > 0 else 1.0)
-        adjacency.append({"room_a": rooms[a]["id"], "room_b": room["id"], "via": da["id"], "via_b": db["id"],
-                          "evidence_matches": int(l["matches"]), "confidence": round(float(conf), 2)})
+        entry = {"room_a": rooms[a]["id"], "room_b": room["id"], "via": da["id"], "via_b": db["id"],
+                 "evidence_matches": int(l["matches"]), "confidence": round(float(conf), 2)}
+        if db["id"].endswith("_reg"):
+            entry["placement"] = "registered"
+        adjacency.append(entry)
     rest = [k for k in range(n) if k not in placed]
     if rest:
         x = max(_poly(rooms[p]).bounds[2] for p in placed) + 1.0
