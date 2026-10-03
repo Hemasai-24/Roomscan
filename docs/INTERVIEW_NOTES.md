@@ -136,7 +136,16 @@ their ranges are. That is how "the same output contract from each tier" is met.
 - **Say honestly:** v2 was refined on the same data; the held-out check on the sample is confounded; wall
   lengths and adjacency still fail; prediction for small rooms (±25 %) was missed.
 
-## 11. Process choices worth mentioning
+## 11. Doors, windows and damage — the last-evening logic
+- **Doors/windows from the image:** detector box → rays through its edges → hit the wall → width/height in
+  metres. Closed doors work (depth can't see them). Edge-cut boxes: left/right cut = reject; top/bottom cut =
+  width only. Found a bug: sideways frames read edges on the wrong axis.
+- **Damage:** seen in 2+ views, ≥ 0.003 m², stricter peeling paint, threshold 0.30. False alarms 12 → 0 on our
+  photos; the honest cost: the staged stain (one photo) is dropped.
+- **Detector choice by numbers:** Grounding DINO 5/10 public photos, 4 false alarms; OWLv2 4/10, 5 false alarms.
+- **Why not more:** the detector itself is the limit (cracks 1/4); fine-tuning needs labelled data and days.
+
+## 12. Process choices worth mentioning
 - Tests first for every piece (synthetic rooms with known answers), then real data.
 - Every deviation from a plan was written down as a "ruling" with its cost if wrong.
 - A fresh reviewer checked Plan 1; 6 of its 8 important findings were fixed with tests.

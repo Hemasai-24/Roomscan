@@ -30,7 +30,7 @@ Not possible (no LiDAR iPhone): own LiDAR captures, LiDAR-tier tape accuracy, Po
 | Wall lengths within ±8 % | 2 of 16 walls; mean error 74 cm | fail |
 | Stitch: all rooms placed and connected, correct adjacency | 1 of 3 connections (hall–kitchen); bedroom and bathroom drawn beside the plan | fail |
 | No room overlaps | max overlap ≤ 0.05 m² | pass |
-| Openings: ≤ 2 cm on ≥ 85 % (miss and phantom count as misses) | 1 of 9 measured openings within 2 cm; 8 missed, 6 phantom | fail |
+| Openings: ≤ 2 cm on ≥ 85 % (miss and phantom count as misses) | 1 of 9 within 2 cm before / 0 of 9 after the image-based door & window logic (our photos lack full-frame door shots) | fail |
 | Ceiling height ≤ 1.5 cm | ceilings not seen in the photos; reported as wide flagged ranges (truth 2.74 m inside, values 3.3-3.8 m) | fail |
 | Calibration (truth inside the 95 % range) | 4/4 room areas, 16/16 walls — **but the ranges are very wide** (area lower bound 0) | honest, not useful |
 
@@ -59,10 +59,11 @@ tracking keeps only 32-35 % of a walk.
 ### Damage (staged in the bedroom)
 | | Result |
 |---|---|
-| Staged water stain (9 × 6 cm) | **detected** on the right wall (bedroom w3) as `water_stain`, measured 16 × 24 cm (over-estimated) |
+| Staged water stain (9 × 6 cm) | detected on the right wall (bedroom w3), measured 16 × 24 cm — but seen in **one photo only**, so the final 2-view rule no longer reports it |
 | Staged crack (8 cm) | **not detected** |
-| False alarms (photo tier, whole home) | 12 regions — mostly "peeling paint" on tiles/furniture; photos give one view each, so the multi-view filter cannot help |
-| Concealed-damage flags | 3 × rule R2 fired — all on false-alarm stains in the hall |
+| False alarms (photo tier, whole home) | 12 regions before the damage rules → **0** after (2 views, min area, stricter peeling paint) |
+| Concealed-damage flags | 3 × R2 fired on false alarms before the rules; 0 after |
+| Detector on public damage photos | 5 of 10 found (Grounding DINO @ 0.30); OWLv2 4/10 — `docs/TRADEOFFS.md` |
 
 ## 2. LiDAR tier on the provided sample (no ground truth)
 

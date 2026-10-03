@@ -32,6 +32,8 @@ You need: an **iPhone 15 or newer**. LiDAR tier needs a **Pro / Pro Max**. About
   down so the wall-floor line shows (4 photos); then **1 photo of each door** from inside the room.
   **Doorways:** stand in each doorway between two rooms and take **one photo looking into the room
   you are leaving**; put a **copy of that same photo in both rooms' folders** (this is how rooms get joined).
+  **Each door and window:** one photo straight on, the whole frame visible (floor to top).
+  **Damage:** photograph it **twice, from two different positions** (damage seen once is not reported).
   **2-8 photos per room** (plus the doorway copies). Keep each room's photos together (e.g. one album per room); a
   single room may also be passed as one plain folder of photos.
 

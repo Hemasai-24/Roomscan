@@ -18,7 +18,7 @@ As of 2026-10-03 16:00; updated as work lands.
 |---|---|---|---|
 | Per-room plan: walls, ceiling height, floor area, openings | `roomscan/room_outline.py`, `room_surfaces.py`, `find_doors_windows.py`, `measurements.py` | `rooms[]` in plan.json | done (outline quality partial) |
 | Stitched multi-room plan, correct adjacency | `roomscan/split_rooms.py`, `connect_rooms.py`, `stitch_rooms.py` | `adjacency[]`, plan.png | partial (all tiers; photo adjacency on own home 1/3; sample-sim precision 0.67 / recall 0.44) |
-| Per-surface damage regions, class + metric extent | `roomscan/damage_detect.py`, `damage_measure.py`, `damage_pipeline.py` | `damage[]` | partial (staged stain found, crack missed, 12 false alarms on photos) |
+| Per-surface damage regions, class + metric extent | `roomscan/damage_detect.py`, `damage_measure.py`, `damage_pipeline.py` | `damage[]` | partial (2-view rule: 0 false alarms on our photos, but the single-photo staged stain is dropped; detector finds 5/10 public damage photos) |
 | Concealed-damage flags with the rule that fired | `roomscan/damage_rules.py` (R1-R5) | `concealed_damage_flags[]` | done (wired in all tiers; fires on false alarms too) |
 | Scope line items keyed to surfaces | `roomscan/repair_scope.py` | `scope_items[]` | done |
 | Confidence interval on every measurement | `roomscan/measurements.py` | `{value, lo, hi, unit}` everywhere | done (tape truth inside 4/4 areas, 16/16 walls; photo/video ranges wide) |

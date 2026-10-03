@@ -38,6 +38,31 @@ Each line: the assumption · where it matters · what breaks when it is false.
 - **Ranges are 95 % and errors are independent per wall**; video/photo add a relative scale term fitted on
   the sample (video σ 0.25, photo σ 0.6) — honest on our home (truth inside 4/4 areas, 16/16 walls) but wide.
 
+## Doors, windows and damage — logic added on the last evening (measured)
+**Doors and windows from the image** (`roomscan/visual_openings.py`): a detector box ("door. window.") is turned
+into metres by casting rays through its left/right/top/bottom edges onto the fitted wall; the same opening in
+several views is merged. Boxes cut at the photo's left/right edge are rejected (width unknown); if only the
+top/bottom is cut, the width is kept and the height is reported as unknown. Implausible sizes are rejected.
+Photo/video: these replace the depth-carved openings; LiDAR: added only where nothing was carved (closed doors).
+A bug found on the way: sideways video frames had their edges read in the wrong axis — fixed and tested.
+**Result:** our home's photos have no straight-on, full-frame door shots, so doors are rarely measurable:
+0 of 9 openings within 2 cm (before: 1 of 9, with 6 phantoms either way). The capture protocol now asks for
+one straight-on photo per door and window. On the LiDAR sample 3-4 image openings are measured per capture.
+
+**Damage rules:** a region must be seen in **2+ views on every tier** (photos too), be ≥ 0.003 m², and
+"peeling paint" needs score ≥ 0.45. Detector threshold 0.35 → 0.30. Effect: photo false alarms on our home
+12 → 0, **but the staged stain is no longer reported** — it was in only one photo (the protocol now asks for
+two). Detector comparison, full pipeline:
+
+| Detector | Real damage found in 10 public photos (Wikimedia, detection only) | False alarms, undamaged sample flat (3 captures) |
+|---|---|---|
+| Grounding DINO @ 0.35 (before) | 3/10 | 4 |
+| **Grounding DINO @ 0.30 (default)** | **5/10** | **4** |
+| OWLv2 @ 0.20 (`ROOMSCAN_DAMAGE_DETECTOR=owlv2+sam2`) | 4/10 | 5 (incl. 2 "mould") |
+
+Cracks are the weak class (1 of 4 crack photos found). Public photos: `scripts/fetch_public_damage.py`,
+`scripts/eval_public_damage.py`; credits and licences in `data/public_damage/credits.txt`.
+
 ## Constraints we worked under
 | Constraint | Consequence |
 |---|---|
