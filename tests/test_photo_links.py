@@ -36,3 +36,16 @@ def test_links_deterministic():
     shared = cv2.resize(_texture(99), (150, 150))
     rooms = [np.stack([_photo(1, shared)]), np.stack([_photo(2, shared, at=(260, 120))])]
     assert room_links(rooms) == room_links(rooms)
+
+
+def test_failed_fit_mask_is_not_counted(monkeypatch):
+    """cv2.findFundamentalMat / findHomography return no model with an uninitialised mask when they fail;
+    that garbage must not count as matches (it inflated links to >1000 'matches' from 13 real ones)."""
+    from roomscan import photo_links as pl
+    monkeypatch.setattr(pl.cv2, "findFundamentalMat", lambda *a, **k: (None, np.full((13, 1), 253, np.uint8)))
+    monkeypatch.setattr(pl.cv2, "findHomography", lambda *a, **k: (None, np.full((13, 1), 77, np.uint8)))
+    rng = np.random.default_rng(0)
+    d = rng.random((13, 128)).astype(np.float32)
+    pts = rng.random((13, 2)).astype(np.float32) * 300
+    fa, fb = (pts, d), (pts + 1, d + 1e-3 * rng.random(d.shape).astype(np.float32))
+    assert pl._inliers(fa, fb, cv2.BFMatcher(cv2.NORM_L2)) == 0

@@ -29,12 +29,12 @@ def _inliers(fa, fb, matcher):
     best = 0
     cv2.setRNGSeed(0)
     F, mask = cv2.findFundamentalMat(a, b, cv2.FM_RANSAC, 3.0, 0.99)
-    if mask is not None:
-        best = int(mask.sum())
+    if F is not None and mask is not None:          # a failed fit returns an uninitialised mask: never count it
+        best = int((mask != 0).sum())
     cv2.setRNGSeed(0)
     Hm, mask = cv2.findHomography(a, b, cv2.RANSAC, 4.0)
-    if mask is not None:
-        best = max(best, int(mask.sum()))
+    if Hm is not None and mask is not None:
+        best = max(best, int((mask != 0).sum()))
     return best
 
 
