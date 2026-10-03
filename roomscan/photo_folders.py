@@ -63,9 +63,12 @@ def load_room_images(folder, size=(392, 518)):
         if land != use_landscape:
             dropped.append(name)
             continue
-        imgs.append(np.asarray(im.resize((w, h), Image.BILINEAR)))
-        if f35:
-            focals.append(focal_px_from_35mm(f35, w, h))
+        W0, H0 = im.size
+        cw, ch = (W0, round(W0 * h / w)) if W0 * h / w <= H0 else (round(H0 * w / h), H0)
+        x0, y0 = (W0 - cw) // 2, (H0 - ch) // 2                 # centre-crop to the model's shape: never stretch
+        imgs.append(np.asarray(im.crop((x0, y0, x0 + cw, y0 + ch)).resize((w, h), Image.BILINEAR)))
+        if f35:   # focal in original pixels (35 mm-equivalent is defined on the full frame), then rescaled
+            focals.append(focal_px_from_35mm(f35, W0, H0) * w / cw)
         names.append(name)
     fx = float(np.median(focals)) if focals else None
     return np.stack(imgs), fx, names, dropped

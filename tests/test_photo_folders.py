@@ -88,3 +88,16 @@ def test_mixed_orientation_keeps_the_majority(tmp_path):
 def test_focal_from_35mm():
     # 35 mm-equivalent focal is defined on the 43.27 mm full-frame diagonal
     np.testing.assert_allclose(focal_px_from_35mm(43.27, 300, 400), 500.0)
+
+
+def test_different_aspect_photo_is_centre_cropped_not_stretched(tmp_path):
+    # a 9:16 photo among 3:4 photos must keep its geometry (crop to 3:4), not be squashed
+    _jpg(tmp_path / "bed" / "a.jpg", w=300, h=400)
+    img = np.zeros((1600, 900, 3), np.uint8)
+    img[700:900, 350:550] = 255                            # 200 x 200 px white square at the centre
+    Image.fromarray(img).save(tmp_path / "bed" / "b.jpg", quality=95)
+    imgs, fx, names, _ = load_room_images(tmp_path / "bed", size=(392, 518))
+    b = imgs[names.index("b.jpg")][:, :, 0] > 128
+    ys, xs = np.nonzero(b)
+    w, h = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
+    assert abs(w - h) <= 2                                 # still a square (a stretch gives ~87 x 65)
