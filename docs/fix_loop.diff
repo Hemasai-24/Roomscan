@@ -1,0 +1,140 @@
+diff --git a/roomscan/photo_room.py b/roomscan/photo_room.py
+index a6d243e..f57000e 100644
+--- a/roomscan/photo_room.py
++++ b/roomscan/photo_room.py
+@@ -54,6 +54,60 @@ def photos_to_capture(images, fx_exif, out_dir, runner, metric, bias):
+                      "metric_scale": round(float(scale), 5), "metric_scale_spread": round(float(spread), 4)}
+ 
+ 
++MIN_CLIPPED_AREA = 0.8   # m2: a clip leaving less than this is not trusted
++WALL_CLEAR = 0.1          # a bounding wall must be at least this far beyond the outermost cameras
++WALL_SPAN_MARGIN = 1.0    # ... and must extend to within this distance of the centre, along the wall
++
++
++def clip_mask_to_walls(mask, grid, classes, angle, cams_plan):
++    """Cut a photo room's floor at its own walls (fix loop): from the cameras' centre look along +u, -u, +v,
++    -v and keep floor only up to the nearest tall wall plane in that direction. Floor seen through a doorway
++    lies beyond such a wall and belongs to the neighbouring room. Returns (mask, {direction: offset})."""
++    from roomscan.room_outline import _wall_lines
++    from roomscan.split_rooms import is_tall_wall
++    fh = classes["floor"].height
++    walls = [w for w in classes["walls"] if is_tall_wall(w, fh)]
++    centre = np.median(cams_plan, axis=0)
++    # a room's own wall cannot lie between two of its camera positions: bounds start beyond the outermost
++    # cameras (one outlier allowed, e.g. a doorway photo taken from the next room)
++    inner = cams_plan
++    if len(cams_plan) >= 4:          # drop the one camera that stretches the others' extent most (outlier)
++        def box(c):
++            return float(np.prod(c.max(axis=0) - c.min(axis=0) + 0.1))
++        far = int(np.argmin([box(np.delete(cams_plan, i, axis=0)) for i in range(len(cams_plan))]))
++        inner = np.delete(cams_plan, far, axis=0)
++    reach = {1: inner.max(axis=0), -1: inner.min(axis=0)}
++    bounds = {}
++    for axis, k in (("u", 0), ("v", 1)):
++        for sign in (1, -1):
++            best = None
++            for ax, off, a, b, support, _ in _wall_lines(walls, angle):
++                if ax != axis:
++                    continue
++                d = (off - centre[k]) * sign
++                beyond = (off - reach[sign][k]) * sign >= WALL_CLEAR
++                along = centre[1 - k]
++                if beyond and a - WALL_SPAN_MARGIN <= along <= b + WALL_SPAN_MARGIN:
++                    if best is None or d < best[0]:
++                        best = (d, off)
++            if best is not None:
++                bounds[f"{'+' if sign > 0 else '-'}{axis}"] = best[1]
++    ys, xs = np.mgrid[0:mask.shape[0], 0:mask.shape[1]]
++    cu = grid.lo[0] + (xs + 0.5) * grid.cell
++    cv = grid.lo[1] + (ys + 0.5) * grid.cell
++    keep = np.ones_like(mask, bool)
++    tol = grid.cell
++    if "+u" in bounds:
++        keep &= cu <= bounds["+u"] + tol
++    if "-u" in bounds:
++        keep &= cu >= bounds["-u"] - tol
++    if "+v" in bounds:
++        keep &= cv <= bounds["+v"] + tol
++    if "-v" in bounds:
++        keep &= cv >= bounds["-v"] - tol
++    return mask & keep, bounds
++
++
+ def _floor_prior(planes, pts, cams, warnings):
+     """Classes with a floor assumed CAMERA_HEIGHT_PRIOR below the cameras (floor not in view). Any horizontal
+     plane found stays a ceiling candidate (a ceiling must not become the floor)."""
+@@ -136,6 +190,15 @@ def measure_photo_room(cap_dir, room_id, tier="photo"):
+         if not hit:
+             raise CaptureError("cameras are not inside any recovered floor region")
+         mask = np.logical_or.reduce(hit)
++        clipped, bounds = clip_mask_to_walls(mask, grid, classes, angle, cq)
++        if clipped.sum() * grid.cell ** 2 >= MIN_CLIPPED_AREA:
++            if clipped.sum() < mask.sum():
++                warnings.append(f"floor beyond the room's own walls removed "
++                                f"({(mask.sum() - clipped.sum()) * grid.cell ** 2:.1f} m2 seen through doorways)")
++            mask = clipped
++        else:
++            warnings.append("could not bound the room by its own walls: floor seen through doorways may be included")
++        out["wall_bounds"] = {k: round(float(v), 3) for k, v in bounds.items()}
+         s = surfaces_for_room(classes, mask, grid, angle)
+         if s["ceiling"] is not None and s["ceiling"].height - s["floor"].height > MAX_PHOTO_CEILING:
+             warnings.append(f"ceiling reading {s['ceiling'].height - s['floor'].height:.2f} m is implausible "
+diff --git a/tests/test_photo_room_clip.py b/tests/test_photo_room_clip.py
+new file mode 100644
+index 0000000..9269d8d
+--- /dev/null
++++ b/tests/test_photo_room_clip.py
+@@ -0,0 +1,53 @@
++import numpy as np
++
++from roomscan.find_surfaces import classify_planes, extract_planes
++from roomscan.photo_room import clip_mask_to_walls
++from roomscan.point_cloud import estimate_normals
++from roomscan.room_outline import manhattan_angle, to_plan
++from roomscan.split_rooms import split_rooms
++from tests.synthetic_rooms import room_points, two_rooms_with_door
++
++
++def _setup(p):
++    c = classify_planes(extract_planes(p, estimate_normals(p), min_inliers=500))
++    a = manhattan_angle(c["walls"])
++    masks, g = split_rooms(c, a)
++    return c, a, np.logical_or.reduce(masks), g        # the leak: every floor region the cameras saw
++
++
++def test_floor_seen_through_the_door_is_cut_off():
++    # cameras stand in room A (x 0..4, z 0..3); room B (x 4..7) is only seen through the door
++    c, a, mask, g = _setup(two_rooms_with_door())
++    cams = to_plan(np.array([[1.5, 1.4, 1.2], [2.5, 1.4, 1.8], [2.0, 1.4, 1.0]]), a)
++    clipped, _ = clip_mask_to_walls(mask, g, c, a, cams)
++    area = clipped.sum() * g.cell ** 2
++    assert mask.sum() * g.cell ** 2 > 18                 # before: both rooms (12 + 9)
++    assert abs(area - 12.0) < 1.2                        # after: room A only
++
++
++def test_single_room_is_not_shrunk():
++    c, a, mask, g = _setup(room_points([(0, 0), (4, 0), (4, 3), (0, 3)], 2.5))
++    cams = to_plan(np.array([[1.0, 1.4, 1.0], [3.0, 1.4, 2.0]]), a)
++    clipped, _ = clip_mask_to_walls(mask, g, c, a, cams)
++    assert abs(clipped.sum() - mask.sum()) * g.cell ** 2 < 0.3
++
++
++def test_wall_between_the_cameras_is_not_a_bound():
++    # a 5 m room with a tall false "wall" copy at x = 1.0 (inconsistent photo depth); photos taken from both
++    # ends of the room - a room's own wall cannot lie between two of its camera positions
++    p = room_points([(0, 0), (5, 0), (5, 3), (0, 3)], 2.5)
++    zs, ys = np.meshgrid(np.arange(0.0, 3.0, 0.02), np.arange(0.0, 2.3, 0.02))
++    ghost = np.c_[np.full(zs.size, 1.0), ys.ravel(), zs.ravel()]
++    c, a, mask, g = _setup(np.concatenate([p, ghost]))
++    cams = to_plan(np.array([[0.4, 1.4, 0.4], [0.4, 1.4, 2.6], [4.6, 1.4, 0.4], [4.6, 1.4, 2.6], [2.5, 1.4, 1.5]]), a)
++    clipped, _ = clip_mask_to_walls(mask, g, c, a, cams)
++    assert clipped.sum() * g.cell ** 2 > 12.0            # whole 15 m2 room kept (minus wall band), not cut at x = 1
++
++
++def test_one_doorway_photo_taken_from_the_next_room_is_ignored():
++    # 4 photos inside room A + 1 doorway photo taken from inside room B (x = 4.6): A is still cut at x = 4
++    c, a, mask, g = _setup(two_rooms_with_door())
++    cams = to_plan(np.array([[0.5, 1.4, 0.5], [3.5, 1.4, 0.5], [0.5, 1.4, 2.5], [3.5, 1.4, 2.5],
++                             [4.6, 1.4, 1.45]]), a)
++    clipped, _ = clip_mask_to_walls(mask, g, c, a, cams)
++    assert abs(clipped.sum() * g.cell ** 2 - 12.0) < 1.2

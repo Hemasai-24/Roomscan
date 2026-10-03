@@ -40,5 +40,54 @@ room measurement (`roomscan/photo_room.py`); LiDAR/video unchanged.
 - the **±8 % gate is expected to still fail**: the remaining error is dominated by the ~10-16 % metric-scale
   error on this phone (Depth Anything bias was calibrated on the sample data's iPhone).
 
-## 4. Result (after the fix)
-*To be filled after the fix ships: before/after table, readable diff, and why it did or did not reach the gate.*
+## 4. Result (after the fix) — tag `fix-after`
+
+**Regenerate:** `git checkout fix-before && python run.py data/raw/m53 --out outputs/fix_loop/before_photo`, then
+`git checkout fix-after && python run.py data/raw/m53 --out outputs/fix_loop/after_photo_v2`; score with
+`outputs/fix_loop/before_after.json` (script in `docs/benchmark_report.md`). Readable diff: `docs/fix_loop.diff`
+(`git diff fix-before..fix-after -- roomscan/photo_room.py tests/test_photo_room_clip.py`).
+
+| Room (tape) | Before | After | Predicted |
+|---|---|---|---|
+| bedroom (8.37 m²) | 6.62 (−21 %) | 6.62 (−21 %) | — |
+| hall (15.56 m²) | 18.54 (+19 %) | 17.53 (+13 %) | — |
+| kitchen (2.86 m²) | 7.01 (**+145 %**) | 4.07 (**+42 %**) | within ±25 % — **missed** |
+| bathroom (2.87 m²) | 6.42 (**+123 %**) | 3.65 (**+27 %**) | within ±25 % — **missed, narrowly** |
+| **total footprint (29.66 m²)** | **38.58 (+30 %)** | **31.87 (+7.5 %)** | within ±15 % — **met** |
+| mean wall-length error | 70 cm | 74 cm | not predicted |
+| true value inside the 95 % range | 4/4 rooms | 4/4 rooms | — |
+
+**Did the gate move from fail to pass?** Partly. The **total footprint is now inside ±8 %** (+7.5 %), but the
+per-room wall lengths are still far outside ±8 % (mean error 74 cm; 2 of 16 walls within the gate), so the
+row "wall lengths within ±8 %" still **fails**. The photo-stitch row also still fails on adjacency (1 of 3
+connections; unchanged — not what this fix addressed).
+
+**What happened, honestly (two iterations of the declared fix):**
+1. **v1** (`4455a6e`, nearest tall wall from the cameras' centre) made the two small rooms much better
+   (kitchen +42 %, bathroom +27 %) but **over-cut the large rooms** (bedroom −65 %, hall −82 %; total −55 %).
+   Diagnosis on the saved reconstructions: with only 5-9 photos, each photo's depth places the same physical
+   wall slightly differently, so the plane finder returns **several copies of one wall up to 0.6 m apart**,
+   and in the bedroom one "tall wall" ran **between two of the room's own camera positions** — impossible for
+   a real wall of that room. "Nearest" picked these inner copies.
+2. **v2** (`0cb3be8`) keeps the declared idea and fixes its premise: a bounding wall must lie **beyond the
+   outermost cameras** (one outlier camera ignored — e.g. a doorway photo taken from the next room). Tests:
+   the leak through a door is cut, a wall copy between cameras is ignored, a doorway photo from the
+   neighbouring room is ignored.
+
+**Root cause verdict:** confirmed for the small rooms — floor seen through doorways was the dominant error
+(kitchen +145 % → +42 %, bathroom +123 % → +27 %). The remaining error is (a) inconsistent wall copies from
+few photos (bedroom unchanged: no wall beyond its cameras was found on two sides) and (b) the metric scale
+(+0-16 % on this phone, see section 2).
+
+**Prediction vs result:** total footprint predicted within ±15 % → +7.5 % (met, better than predicted); small
+rooms predicted within ±25 % → +42 % / +27 % (missed). We also predicted the ±8 % gate would still fail:
+true for wall lengths, false for the total footprint (it passed).
+
+**Caveats we want the reader to have:**
+- v2's rule was refined while looking at this benchmark, so it may be tuned to it. **Held-out check** on the
+  sample flat (photos simulated from LiDAR frames, LiDAR as reference): footprint error +21.5 % → −12.0 %
+  (smaller), median top-wall error 28.5 % → 38.7 % (worse), adjacency precision 0.67 / recall 0.44. The
+  LiDAR reference itself changed between the two runs (13 vs 10 rooms after the small-room fix), so this
+  check is confounded — **no clean evidence that v2 generalises**.
+- Wall-length scoring is unreliable on jagged outlines (predicted rooms have 4-28 walls vs 4 measured);
+  floor area per room is the more trustworthy metric here.
